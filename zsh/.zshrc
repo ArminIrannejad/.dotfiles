@@ -1,6 +1,8 @@
 # If you come from bash you might have to change your $PATH.
 # export PATH=$HOME/bin:/usr/local/bin:$PATH
 
+export PATH="$HOME/.dotfiles/tmux:$PATH"
+
 # Path to your oh-my-zsh installation.
 export ZSH="$HOME/.oh-my-zsh"
 
@@ -105,6 +107,7 @@ alias ll='ls -alF'
 alias la='ls -A'
 alias l='ls -CF'
 alias vim='nvim'
+bindkey -s ^f "tmux-sessionizer\n"
 #
 ## >>> conda initialize >>>
 # !! Contents within this block are managed by 'conda init' !!
