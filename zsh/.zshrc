@@ -2,6 +2,7 @@
 # export PATH=$HOME/bin:/usr/local/bin:$PATH
 
 export PATH="$HOME/.dotfiles/tmux:$PATH"
+export PATH="/opt/nvim-linux64/bin:$PATH"
 
 # Path to your oh-my-zsh installation.
 export ZSH="$HOME/.oh-my-zsh"
@@ -107,6 +108,7 @@ alias ll='ls -alF'
 alias la='ls -A'
 alias l='ls -CF'
 alias vim='nvim'
+alias cat='batcat'
 bindkey -s ^f "tmux-sessionizer\n"
 #
 ## >>> conda initialize >>>
@@ -116,14 +118,13 @@ if [ $? -eq 0 ]; then
     eval "$__conda_setup"
 else
     if [ -f "/home/armino112/anaconda3/etc/profile.d/conda.sh" ]; then
-        . "/home/armino112/anaconda3/etc/profile.d/conda.sh"
+# . "/home/armino112/anaconda3/etc/profile.d/conda.sh"  # commented out by conda initialize
     else
-        export PATH="/home/armino112/anaconda3/bin:$PATH"
+# export PATH="/home/armino112/anaconda3/bin:$PATH"  # commented out by conda initialize
     fi
 fi
 unset __conda_setup
 # <<< conda initialize <<<
-
 
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
