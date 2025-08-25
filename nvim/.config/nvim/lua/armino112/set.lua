@@ -1,19 +1,32 @@
+vim.opt.guicursor = ""
+vim.opt.winborder = "rounded"
 vim.opt.nu = true
 vim.opt.relativenumber = true
+vim.opt.splitbelow = true
+vim.opt.splitright = true
 
-vim.api.nvim_exec([[
-  augroup YankHighlight
-    autocmd!
-    autocmd TextYankPost * lua vim.highlight.on_yank {higroup="IncSearch", timeout=200}
-  augroup END
-]], false)
+local yank_hl = vim.api.nvim_create_augroup("YankHighlight", { clear = true })
+vim.api.nvim_create_autocmd("TextYankPost", {
+  group    = yank_hl,
+  pattern  = "*",
+  callback = function()
+    vim.highlight.on_yank {
+      higroup = "IncSearch",
+      timeout = 200,
+    }
+  end,
+})
 
 
-vim.opt.tabstop = 4
-vim.opt.softtabstop = 4
-vim.opt.shiftwidth = 4
+vim.opt.tabstop = 2
+vim.opt.softtabstop = 2
+vim.opt.shiftwidth = 2
+vim.opt.expandtab = true
 
 vim.opt.smartindent = true
+vim.opt.smartcase = true
+vim.opt.ignorecase = true
+vim.opt.inccommand = "split"
 
 vim.opt.wrap = false
 
@@ -32,7 +45,5 @@ vim.opt.signcolumn = "yes"
 vim.opt.isfname:append("@-@")
 
 vim.opt.updatetime = 50
-
-vim.opt.colorcolumn = "80"
 
 vim.g.mapleader = " "

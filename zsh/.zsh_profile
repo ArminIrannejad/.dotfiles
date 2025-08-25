@@ -1,0 +1,7 @@
+export PATH="$HOME/hulsdevenv/.dotfiles/tmux:$PATH"
+export PATH="$HOME/.local/src/neovim/bin:$PATH"
+export PATH="/usr/local/go/bin:$PATH"
+
+alias vim='nvim'
+alias cat='batcat'
+bindkey -s ^f "tmux-sessionizer\n"

@@ -1,91 +1,175 @@
-function ColorMyPencils(color)
-	color = color or "rose-pine-moon"
-	vim.cmd.colorscheme(color)
-
-	vim.api.nvim_set_hl(0, "Normal", { bg = "none" })
-	vim.api.nvim_set_hl(0, "NormalFloat", { bg = "none" })
-end
-
 return {
 
-    {
-        "erikbackman/brightburn.vim",
+  {
+    "catppuccin/nvim",
+    name = "catppuccin",
+    opts = {
+      no_italic = true,
+      styles = {
+        comments = {},
+        conditionals = {},
+        loops = {},
+        functions = {},
+        keywords = {},
+        strings = {},
+        variables = {},
+        numbers = {},
+        booleans = {},
+        properties = {},
+        types = {},
+        operators = {},
+      },
     },
+  },
 
-    {
-        "folke/tokyonight.nvim",
-        lazy = false,
-        opts = {},
-        config = function()
-            ColorMyPencils()
-        end
+  {
+    "rose-pine/neovim",
+    name = "rose-pine",
+    opts = {
+      disable_italics = true,
     },
-    {
-        "ellisonleao/gruvbox.nvim",
-        name = "gruvbox",
-        config = function()
-            require("gruvbox").setup({
-                terminal_colors = true, -- add neovim terminal colors
-                undercurl = true,
-                underline = false,
-                bold = true,
-                italic = {
-                    strings = false,
-                    emphasis = false,
-                    comments = false,
-                    operators = false,
-                    folds = false,
-                },
-                strikethrough = true,
-                invert_selection = false,
-                invert_signs = false,
-                invert_tabline = false,
-                invert_intend_guides = false,
-                inverse = true, -- invert background for search, diffs, statuslines and errors
-                contrast = "", -- can be "hard", "soft" or empty string
-                palette_overrides = {},
-                overrides = {},
-                dim_inactive = false,
-                transparent_mode = false,
-            })
-        end,
+  },
+
+  {
+    "EdenEast/nightfox.nvim",
+    opts = {
+      options = {
+        styles = {
+          comments  = "NONE",
+          keywords  = "NONE",
+          functions = "NONE",
+          types     = "NONE",
+          variables = "NONE",
+          strings   = "NONE",
+        },
+      },
     },
-    {
-        "folke/tokyonight.nvim",
-        config = function()
-            require("tokyonight").setup({
-                -- your configuration comes here
-                -- or leave it empty to use the default settings
-                style = "storm", -- The theme comes in three styles, `storm`, `moon`, a darker variant `night` and `day`
-                transparent = true, -- Enable this to disable setting the background color
-                terminal_colors = true, -- Configure the colors used when opening a `:terminal` in Neovim
-                styles = {
-                    -- Style to be applied to different syntax groups
-                    -- Value is any valid attr-list value for `:help nvim_set_hl`
-                    comments = { italic = false },
-                    keywords = { italic = false },
-                    -- Background styles. Can be "dark", "transparent" or "normal"
-                    sidebars = "dark", -- style for sidebars, see below
-                    floats = "dark", -- style for floating windows
-                },
-            })
-        end
+  },
+
+  {
+    "bignimbus/pop-punk.vim",
+    name = "pop-punk",
+  },
+
+  {
+    "dracula/vim",
+    name = "dracula",
+    init = function()
+      vim.g.dracula_italic = 0
+      vim.g.dracula_italic_comment = 0
+    end,
+  },
+
+  {
+    "shaunsingh/nord.nvim",
+    init = function()
+      vim.g.nord_italic = false
+      vim.g.nord_italic_comments = false
+    end,
+  },
+
+  {
+    "navarasu/onedark.nvim",
+    opts = {
+      code_style = {
+        comments  = "none",
+        keywords  = "none",
+        functions = "none",
+        strings   = "none",
+        variables = "none",
+      },
     },
+  },
 
-    {
-        "rose-pine/neovim",
-        name = "rose-pine",
-        config = function()
-            require('rose-pine').setup({
-                disable_background = true,
-                styles = {
-                    italic = false,
-                },
-            })
-
-            ColorMyPencils();
-        end
+  {
+    "rebelot/kanagawa.nvim",
+    opts = {
+      commentStyle   = { italic = false },
+      keywordStyle   = { italic = false },
+      statementStyle = { italic = false },
+      typeStyle      = { italic = false },
     },
+  },
+
+  {
+    "sainnhe/gruvbox-material",
+    init = function()
+      vim.g.gruvbox_material_enable_italic = 0
+      vim.g.gruvbox_material_disable_italic_comment = 1
+    end,
+  },
+
+  { "tjdevries/colorbuddy.vim" },
+  { "tjdevries/gruvbuddy.nvim" },
+
+  {
+    "scottmckendry/cyberdream.nvim",
+    opts = {
+      variant = "dark",
+      transparent = false,
+      italic_comments = false,
+    },
+  },
+
+  { "nanotech/jellybeans.vim",         name = "jellybeans" },
+
+  { "nyoom-engineering/oxocarbon.nvim" },
+
+  {
+    "bluz71/vim-moonfly-colors",
+    name = "moonfly",
+    init = function()
+      vim.g.moonflyItalics = false
+    end,
+  },
+
+  { "pineapplegiant/spaceduck" },
+
+  { "jaredgorski/spacecamp" },
+
+  { "tpope/vim-vividchalk",    name = "vividchalk" },
+
+  {
+    "Everblush/nvim",
+    name = "everblush",
+    opts = {
+    },
+  },
+
+  { "Rigellute/shades-of-purple.vim", name = "shades-of-purple" },
+
+  {
+    "diegoulloao/neofusion.nvim",
+    name = "neofusion",
+    opts = {
+      italic = {
+        strings = false,
+        emphasis = false,
+        comments = false,
+        operators = false,
+        folds = false,
+      },
+    },
+  },
 
 
+  {
+    "folke/tokyonight.nvim",
+    lazy = false,
+    priority = 1000,
+    opts = {
+      transparent = false,
+      style = "night",
+      styles = {
+        comments  = { italic = false },
+        keywords  = { italic = false },
+        functions = { italic = false },
+        variables = { italic = false },
+      },
+    },
+    config = function(_, opts)
+      require("tokyonight").setup(opts)
+      vim.cmd.colorscheme("tokyonight")
+    end,
+  },
 }
