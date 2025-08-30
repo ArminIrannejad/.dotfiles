@@ -70,9 +70,28 @@ ZSH_THEME="robbyrussell"
 # Custom plugins may be added to $ZSH_CUSTOM/plugins/
 # Example format: plugins=(rails git textmate ruby lighthouse)
 # Add wisely, as too many plugins slow down shell startup.
-plugins=(git zsh-autosuggestions zsh-syntax-highlighting)
+plugins=(
+  git 
+  zsh-autosuggestions 
+  zsh-syntax-highlighting
+  zsh-history-substring-search
+  zsh-vi-mode
+)
+
 ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=8'
 ZSH_AUTOSUGGEST_USE_ASYNC=1
+
+ZVM_CURSOR_STYLE_ENABLED=false
+
+function zvm_after_select_vi_mode() {
+  case $ZVM_MODE in
+    $ZVM_MODE_NORMAL)      RPROMPT="%F{yellow}[N]%f" ;;
+    $ZVM_MODE_INSERT)      RPROMPT="%F{green}[I]%f" ;;
+    $ZVM_MODE_VISUAL)      RPROMPT="%F{red}[V]%f" ;;
+    $ZVM_MODE_VISUAL_LINE) RPROMPT="%F{red}[VL]%f" ;;
+    $ZVM_MODE_REPLACE)     RPROMPT="%F{magenta}[R]%f" ;;
+  esac
+}
 
 
 source $ZSH/oh-my-zsh.sh
@@ -122,3 +141,6 @@ fi
 unset __conda_setup
 # <<< conda initialize <<<
 
+
+# Created by `pipx` on 2025-08-25 11:32:50
+export PATH="$PATH:/home/armino112/.local/bin"
