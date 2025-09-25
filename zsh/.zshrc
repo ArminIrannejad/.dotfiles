@@ -96,6 +96,10 @@ function zvm_after_select_vi_mode() {
 
 source $ZSH/oh-my-zsh.sh
 source ~/.zsh_profile
+function zvm_after_init() {
+  bindkey -M viins -s '^F' "tmux-sessionizer\n"
+  bindkey -M vicmd -s '^F' "tmux-sessionizer\n"
+}
 
 # User configuration
 
