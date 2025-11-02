@@ -9,5 +9,5 @@ vim.keymap.set("i", "<CR>", function()
   end
 
   return "\n"
-end, { buffer = true, expr = true, desc = "Smart block newline for Go" })
+end, { buffer = true, expr = true, desc = "curly braces autopair thingy" })
 

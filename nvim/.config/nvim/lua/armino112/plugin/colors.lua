@@ -29,6 +29,27 @@ return {
       disable_italics = true,
     },
   },
+  {
+    "blazkowolf/gruber-darker.nvim",
+    name = "gruber-darker",
+    -- don't set colorscheme here so Telescope can switch dynamically
+    opts = {
+      bold = false,
+      italic = {
+        strings   = false,
+        comments  = false,
+        operators = false,
+        folds     = false,
+      },
+      underline = false,
+      undercurl = false,
+      invert = {
+        signs   = false,
+        tabline = false,
+        visual  = false,
+      },
+    },
+  },
 
   {
     "EdenEast/nightfox.nvim",

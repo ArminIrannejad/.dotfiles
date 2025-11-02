@@ -19,6 +19,7 @@ return {
       formatters_by_ft = {
         json = { "prettier", stop_on_first = true, name = "dprint" },
         jsonc = { "prettier", stop_on_first = true, name = "dprint" },
+        haskell = {"ormulo"},
       }
     })
 
@@ -29,6 +30,11 @@ return {
       vim.lsp.protocol.make_client_capabilities(),
       cmp_lsp.default_capabilities()
     )
+    vim.lsp.config("ocamllsp", {
+      cmd = { "ocamllsp" }, -- found via PATH from opam I hope
+      capabilities = capabilities,
+    })
+    vim.lsp.enable("ocamllsp")
 
     --require("fidget").setup({})
     require("mason").setup()
@@ -97,7 +103,7 @@ return {
       underline        = true,
       update_in_insert = false,
       float            = {
-        focusable = false,
+        focusable = true,
         border    = "rounded",
         header    = "",
         prefix    = "",

@@ -29,7 +29,7 @@ return {
       vim.keymap.set("n", "<leader>ff", function()
         require("telescope.builtin").find_files({
           no_ignore = true,
-          hidden = true,
+          hidden = false,
         })
       end)
       vim.keymap.set("n", "<leader>en", function()
