@@ -37,7 +37,7 @@ vim.opt.undofile = true
 
 vim.opt.hlsearch = false
 vim.opt.incsearch = true
-vim.opt.cursorline = false -- highlight current line
+vim.opt.cursorline = false
 vim.opt.termguicolors = true
 
 vim.opt.scrolloff = 12

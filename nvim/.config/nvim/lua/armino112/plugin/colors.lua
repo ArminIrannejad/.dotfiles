@@ -32,7 +32,6 @@ return {
   {
     "blazkowolf/gruber-darker.nvim",
     name = "gruber-darker",
-    -- don't set colorscheme here so Telescope can switch dynamically
     opts = {
       bold = false,
       italic = {
@@ -49,6 +48,11 @@ return {
         visual  = false,
       },
     },
+    config = function(_, opts)
+      require("gruber-darker").setup(opts)
+      vim.cmd.colorscheme("gruber-darker")
+    end,
+
   },
 
   {
@@ -172,8 +176,6 @@ return {
       },
     },
   },
-
-
   {
     "folke/tokyonight.nvim",
     lazy = false,
@@ -188,9 +190,5 @@ return {
         variables = { italic = false },
       },
     },
-    config = function(_, opts)
-      require("tokyonight").setup(opts)
-      vim.cmd.colorscheme("tokyonight")
-    end,
   },
 }
