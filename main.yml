@@ -1,0 +1,23 @@
+
+- name: Dotfiles config
+  hosts: localhost
+  connection: local
+  gather_facts: true
+
+  # Global vars for this play (like git name, etc.)
+  vars_files:
+    - group_vars/all.yml
+
+  pre_tasks:
+    - name: Run common pre-tasks
+      ansible.builtin.import_tasks: pre_tasks/main.yml
+      tags:
+        - always
+
+  roles:
+    - role: system
+    - role: git
+    - role: zsh
+    - role: neovim
+    - role: starship
+
