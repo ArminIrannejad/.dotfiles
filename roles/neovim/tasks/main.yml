@@ -1,3 +1,44 @@
-- name: Neovim | Include Ubuntu tasks
+---
+
+- name: "Neovim | Include Ubuntu/Debian install tasks"
   ansible.builtin.import_tasks: ubuntu.yml
   when: ansible_facts.os_family == "Debian"
+
+- name: "Neovim | Check if nvim config directory exists"
+  ansible.builtin.stat:
+    path: "{{ config_dir }}/nvim"
+  register: nvim_config_stat
+
+- name: "Neovim | Backup existing config if not a symlink"
+  when:
+    - nvim_config_stat.stat.exists
+    - not nvim_config_stat.stat.islnk
+  ansible.builtin.command:
+    cmd: >
+      mv {{ config_dir }}/nvim
+         {{ config_dir }}/nvim.backup-{{ ansible_date_time.epoch }}
+  args:
+    creates: "{{ config_dir }}/nvim.backup-{{ ansible_date_time.epoch }}"
+
+- name: "Neovim | Remove existing config if it is a broken symlink"
+  ansible.builtin.file:
+    path: "{{ config_dir }}/nvim"
+    state: absent
+  when:
+    - nvim_config_stat.stat.exists
+    - nvim_config_stat.stat.islnk
+    - not nvim_config_stat.stat.isdir | default(false)
+
+- name: "Neovim | Ensure parent config directory exists"
+  ansible.builtin.file:
+    path: "{{ config_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: "Neovim | Symlink ~/.config/nvim -> role files directory"
+  ansible.builtin.file:
+    src: "{{ role_path }}/files"
+    dest: "{{ config_dir }}/nvim"
+    state: link
+    force: true
+
