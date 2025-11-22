@@ -1,0 +1,19 @@
+dotfiles_repo: "{{ ansible_env.HOME }}/.dotfiles"
+
+git_user_name: "ArminIrannejad"
+git_user_email: "armin.irannejad@gmail.com"
+
+packages_common:
+  - git
+  - zsh
+  - curl
+  - wget
+  - neovim
+  - python3
+  - python3-pip
+
+zsh_default_shell: true
+neovim_enabled: true
+starship_enabled: true
+config_dir: "{{ ansible_env.HOME }}/.config"
+bin_dir: "{{ ansible_env.HOME }}/bin"
