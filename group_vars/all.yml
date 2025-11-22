@@ -6,11 +6,17 @@ git_user_email: "armin.irannejad@gmail.com"
 packages_common:
   - git
   - zsh
+  - ripgrep
+  - fzf
   - curl
   - wget
   - neovim
-  - python3
-  - python3-pip
+  - npm
+  - nodejs
+  - tmux
+  - unzip
+  - btop
+  - build-essential
 
 zsh_default_shell: true
 neovim_enabled: true

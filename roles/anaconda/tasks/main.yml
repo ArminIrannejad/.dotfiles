@@ -1,0 +1,23 @@
+- name: Anaconda | Download installer
+  ansible.builtin.get_url:
+    url: https://repo.anaconda.com/archive/Anaconda3-latest-Linux-x86_64.sh
+    dest: /tmp/anaconda.sh
+    mode: "0755"
+
+- name: Anaconda | Run installer
+  ansible.builtin.command:
+    cmd: bash /tmp/anaconda.sh -b -p "{{ ansible_env.HOME }}/anaconda3"
+  args:
+    creates: "{{ ansible_env.HOME }}/anaconda3"
+
+- name: Anaconda | Add init to .zshrc
+  ansible.builtin.lineinfile:
+    path: "{{ ansible_env.HOME }}/.zshrc"
+    line: 'source ~/anaconda3/etc/profile.d/conda.sh'
+
+    insertafter: EOF
+- name: Anaconda | Add conda bin to PATH
+  ansible.builtin.lineinfile:
+    path: "{{ ansible_env.HOME }}/.zshrc"
+    line: 'export PATH="$HOME/anaconda3/bin:$PATH"'
+    insertafter: EOF
