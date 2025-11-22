@@ -20,4 +20,5 @@
     - role: zsh
     - role: neovim
     - role: starship
+    - role: anaconda
 
