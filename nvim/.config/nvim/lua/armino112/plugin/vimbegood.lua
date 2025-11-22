@@ -1,11 +1,12 @@
 return {
-	{
-		"theprimeagen/vim-be-good",
+  {
+    "theprimeagen/vim-be-good",
 
-		dependencies = {
-			"nvim-lua/plenary.nvim"
-		},
-		config = function ()
-		end
-	}
+    dependencies = {
+      "nvim-lua/plenary.nvim"
+    },
+    config = function()
+    end
+  },
+  {"vuciv/golf"}
 }

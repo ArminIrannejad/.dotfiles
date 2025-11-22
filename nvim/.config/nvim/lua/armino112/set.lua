@@ -5,6 +5,12 @@ vim.opt.relativenumber = true
 vim.opt.splitbelow = true
 vim.opt.splitright = true
 
+-- old school vim but want it enabled.
+vim.opt.path:append("**")
+vim.opt.wildmenu = true
+vim.opt.wildignore:append({ "*.o", "*.hi", "*.so" })
+
+
 local yank_hl = vim.api.nvim_create_augroup("YankHighlight", { clear = true })
 vim.api.nvim_create_autocmd("TextYankPost", {
   group    = yank_hl,

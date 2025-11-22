@@ -21,8 +21,8 @@ vim.keymap.set("n", "<leader>fo", function()
 end, { desc = "Format file" })
 
 -- reselect indented area
--- vim.keymap.set("v", "<", "<gv")
--- vim.keymap.set("v", ">", ">gv")
+vim.keymap.set("v", "<", "<gv")
+vim.keymap.set("v", ">", ">gv")
 
 vim.keymap.set("n", "<C-k>", "<cmd>cnext<CR>zz")
 vim.keymap.set("n", "<C-j>", "<cmd>cprev<CR>zz")

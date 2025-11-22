@@ -19,7 +19,8 @@ return {
       formatters_by_ft = {
         json = { "prettier", stop_on_first = true, name = "dprint" },
         jsonc = { "prettier", stop_on_first = true, name = "dprint" },
-        haskell = {"ormulo"},
+        haskell = { "ormolu" },
+        marksdown = {"marksman"},
       }
     })
 
@@ -40,6 +41,9 @@ return {
     require("mason").setup()
     require("mason-lspconfig").setup({
       ensure_installed = { "lua_ls", "pyright" },
+      automatic_enable = {
+        exclude = {"hls"}, -- haskell-tools will start hls
+      }
     })
 
     vim.lsp.config("pyright", {

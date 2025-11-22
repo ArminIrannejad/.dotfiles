@@ -23,7 +23,7 @@ return {
         augend.integer.alias.decimal,
         augend.integer.alias.hex,
         augend.date.alias["%Y-%m-%d"],
-        augend.constant.new({ elements = { "true", "false" }, word = true, cyclic = true }), -- Enum a
+        augend.constant.new({ elements = { "true", "false" }, word = true, cyclic = true }),
         augend.constant.new({ elements = { "True", "False" }, word = true, cyclic = true }),
         --augend.constalt.alias.bool this should work but the above one does the job atm
       },
