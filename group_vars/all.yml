@@ -17,6 +17,7 @@ packages_common:
   - unzip
   - btop
   - build-essential
+  - tmux
 
 zsh_default_shell: true
 neovim_enabled: true

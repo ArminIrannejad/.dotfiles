@@ -18,6 +18,7 @@
     - role: system
     - role: git
     - role: zsh
+    - role: tmux
     - role: neovim
     - role: starship
     - role: anaconda
