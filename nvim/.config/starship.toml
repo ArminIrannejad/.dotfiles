@@ -201,7 +201,7 @@ symbol = " "
 # deleted = " "
 
 [golang]
-format = "[$version]($style) "
+format = "[ $version]($style) "
 
 [gcloud]
 disabled = true
@@ -309,10 +309,10 @@ RockyLinux = " "
 Redox = "󰀘 "
 Solus = "󰠳 "
 SUSE = " "
-Ubuntu = " "
+Ubuntu = "  "
 Unknown = " "
 Void = " "
-Windows = "󰍲 "
+Windows = "󰍲  "
 
 [package]
 symbol = "󰏗 "
