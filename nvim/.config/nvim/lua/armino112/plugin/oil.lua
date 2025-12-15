@@ -15,6 +15,7 @@ return {
           "permissions",
           "size",
           "mtime",
+          "user",
         },
 
         keymaps = {
