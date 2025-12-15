@@ -8,5 +8,4 @@ return {
     config = function()
     end
   },
-  {"vuciv/golf"}
 }

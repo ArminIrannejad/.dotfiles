@@ -15,7 +15,6 @@
   "dracula": { "branch": "master", "commit": "d4b0823100c702af127cba8dd5595a8f599041ec" },
   "everblush": { "branch": "main", "commit": "678f808d81801b983b6fb8296fb17ba1b2785d7c" },
   "fluoromachine.nvim": { "branch": "main", "commit": "a279f667168e742df059caf1f1f4daf1de24f4f8" },
-  "golf": { "branch": "main", "commit": "abf1bc0c1c4a5482b4a4b36b950b49aaa0f39e69" },
   "gruber-darker": { "branch": "main", "commit": "98a2e141981cbd5a194a97eae024bf55af854579" },
   "gruvbox-material": { "branch": "master", "commit": "cc47341018320a2c82262958a1af889e5eeacd6e" },
   "gruvbuddy.nvim": { "branch": "master", "commit": "3aa94b2fb061b13ccc118d21fad25d6b1ff3fc8b" },
