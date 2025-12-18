@@ -4,15 +4,25 @@ return {
     lazy = true,
     dependencies = {
       "nvim-lua/plenary.nvim",
-      "sindrets/diffview.nvim",
-
       "nvim-telescope/telescope.nvim",
     },
     cmd = "Neogit",
     keys = {
       { "<leader>gg", "<cmd>Neogit<cr>", desc = "Show Neogit UI" },
-      { "<leader>do", "<cmd>DiffviewOpen<cr>" },
-      { "<leader>dc", "<cmd>DiffviewClose<cr>" },
-    }
+    },
+    config = true,
+  },
+
+  {
+    "esmuellert/vscode-diff.nvim",
+    lazy = true,
+    dependencies = { "MunifTanjim/nui.nvim" },
+    cmd = "CodeDiff",
+    keys = {
+      { "<leader>do", "<cmd>CodeDiff<cr>" },
+      { "<leader>df", "<cmd>CodeDiff file HEAD<cr>" },
+      { "<leader>dc", "<cmd>tabclose<cr>"},
+    },
   },
 }
+
