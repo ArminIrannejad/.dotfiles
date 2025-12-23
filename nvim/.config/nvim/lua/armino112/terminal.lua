@@ -122,6 +122,7 @@ vim.keymap.set("n", "<leader>ru", function()
     go      = "go run",
     haskell = "runghc",
     ocaml   = "ocaml",
+    c       = "cc",
   }
 
   local ft      = vim.bo.filetype
@@ -131,7 +132,29 @@ vim.keymap.set("n", "<leader>ru", function()
     return
   end
 
-  local runner_cmd = "time " .. exe .. " " .. vim.fn.shellescape(file)
+  local build_cmd = {
+    c = function(file, dir)
+      local out = vim.fn.fnamemodify(file, ":r")
+      return table.concat({
+        "cc",
+        "-Wall -Wextra -Wpedantic -O",
+        vim.fn.shellescape(file),
+        "-o",
+        vim.fn.shellescape(out),
+        "&&",
+        vim.fn.shellescape(out),
+      }, " ")
+    end,
+  }
+
+  local cmd_builder = build_cmd[ft]
+  local runner_cmd
+  if cmd_builder then
+    runner_cmd = "time " .. cmd_builder(file, dir)
+  else
+    runner_cmd = "time " .. exe .. " " .. vim.fn.shellescape(file)
+  end
+
 
   local term_buf = find_runner_term()
   local term_win
