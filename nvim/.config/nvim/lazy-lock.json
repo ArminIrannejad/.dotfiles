@@ -61,5 +61,6 @@
   "vim-be-good": { "branch": "master", "commit": "0ae3de14eb8efc6effe7704b5e46495e91931cc5" },
   "vividchalk": { "branch": "master", "commit": "be5c6251279bfcfa55cdea8c9a8ccd7a56c8a642" },
   "vscode-diff.nvim": { "branch": "main", "commit": "6475f9164aceafbe156fd66374f85d0f23aea254" },
+  "zen-mode.nvim": { "branch": "main", "commit": "8564ce6d29ec7554eb9df578efa882d33b3c23a7" },
   "zenbones.nvim": { "branch": "main", "commit": "4635a3f46d1066975d1074cd9f61f93cb1e32f64" }
 }
