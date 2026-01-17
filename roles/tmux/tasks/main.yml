@@ -1,0 +1,20 @@
+---
+- name: "Tmux | Checking for Distribution Config: {{ ansible_facts['distribution'] }}"
+  ansible.builtin.stat:
+    path: "{{ role_path }}/tasks/{{ ansible_facts['distribution'] }}.yml"
+  register: tmux_distribution_config
+
+- name: "Tmux | Run Tasks: {{ ansible_facts['distribution'] }}"
+  ansible.builtin.include_tasks: "{{ ansible_facts['distribution'] }}.yml"
+  when: tmux_distribution_config.stat.exists
+
+- name: "Tmux | Configure tmux"
+  ansible.builtin.copy:
+    src: tmux
+    dest: "{{ ansible_facts['user_dir'] }}/.config/"
+    mode: "0644"
+    directory_mode: "0755"
+    force: true
+
+
+# TODO: add tmux-sessionizer
