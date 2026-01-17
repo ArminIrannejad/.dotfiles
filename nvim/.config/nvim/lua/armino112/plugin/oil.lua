@@ -19,6 +19,9 @@ return {
         },
 
         keymaps = {
+          ["<C-s>"] = false,
+          ["<C-n>"] = false,
+          ["<C-t>"] = false,
           ["<C-h>"] = false,
           ["<BS>"] = "actions.parent",
           ["C"] = "actions.cd",
