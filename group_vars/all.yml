@@ -4,6 +4,7 @@ git_user_name: "ArminIrannejad"
 git_user_email: "armin.irannejad@gmail.com"
 
 packages_common:
+  # - ansible
   - git
   - zsh
   - ripgrep
@@ -18,6 +19,7 @@ packages_common:
   - btop
   - build-essential
   - tmux
+  - tree
 
 zsh_default_shell: true
 neovim_enabled: true
