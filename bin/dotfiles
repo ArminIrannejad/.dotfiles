@@ -1,72 +1,72 @@
 #!/bin/bash
 
-# shellcheck shell=bash
-# shellcheck disable=SC2034  # Unused variables are exported for child scripts
+shellcheck shell=bash
+shellcheck disable=SC2034  # Unused variables are exported for child scripts
 
 # Catppuccin Mocha color codes
-# NC='\033[0m'
-# BOLD='\033[1m'
-#
-# # Catppuccin Mocha colors
-# CAT_ROSEWATER='\033[38;2;245;224;220m'
-# CAT_FLAMINGO='\033[38;2;242;205;205m'
-# CAT_PINK='\033[38;2;245;194;231m'
-# CAT_MAUVE='\033[38;2;203;166;247m'
-# CAT_RED='\033[38;2;243;139;168m'
-# CAT_MAROON='\033[38;2;235;160;172m'
-# CAT_PEACH='\033[38;2;250;179;135m'
-# CAT_YELLOW='\033[38;2;249;226;175m'
-# CAT_GREEN='\033[38;2;166;227;161m'
-# CAT_TEAL='\033[38;2;148;226;213m'
-# CAT_SKY='\033[38;2;137;220;235m'
-# CAT_SAPPHIRE='\033[38;2;116;199;236m'
-# CAT_BLUE='\033[38;2;137;180;250m'
-# CAT_LAVENDER='\033[38;2;180;190;254m'
-# CAT_TEXT='\033[38;2;205;214;244m'
-# CAT_SUBTEXT1='\033[38;2;186;194;222m'
-# CAT_SUBTEXT0='\033[38;2;166;173;200m'
-# CAT_OVERLAY2='\033[38;2;147;153;178m'
-# CAT_OVERLAY1='\033[38;2;127;132;156m'
-# CAT_OVERLAY0='\033[38;2;108;112;134m'
-# CAT_SURFACE2='\033[38;2;88;91;112m'
-# CAT_SURFACE1='\033[38;2;69;71;90m'
-# CAT_SURFACE0='\033[38;2;49;50;68m'
-# CAT_BASE='\033[38;2;30;30;46m'
-# CAT_MANTLE='\033[38;2;24;24;37m'
-# CAT_CRUST='\033[38;2;17;17;27m'
-#
-# # Legacy mappings for easier use
-# RED="$CAT_RED"
-# GREEN="$CAT_GREEN"
-# YELLOW="$CAT_YELLOW"
-# BLUE="$CAT_BLUE"
-# PURPLE="$CAT_MAUVE"
-# CYAN="$CAT_TEAL"
-# WHITE="$CAT_TEXT"
-# ORANGE="$CAT_PEACH"
-# LBLACK="$CAT_SURFACE0"
-# LRED="$CAT_RED"
-# LGREEN="$CAT_GREEN"
-# LYELLOW="$CAT_YELLOW"
-# LBLUE="$CAT_BLUE"
-# LPURPLE="$CAT_MAUVE"
-# LCYAN="$CAT_TEAL"
-#
-# # Special
-# SEA="$CAT_SAPPHIRE"
-# OVERWRITE='\e[1A\e[K'
-#
-# #emoji codes
-# CHECK_MARK="${GREEN}\xE2\x9C\x94${NC}"
-# X_MARK="${RED}\xE2\x9C\x96${NC}"
-# PIN="${RED}\xF0\x9F\x93\x8C${NC}"
-# CLOCK="${GREEN}\xE2\x8C\x9B${NC}"
-# ARROW="${SEA}\xE2\x96\xB6${NC}"
-# BOOK="${RED}\xF0\x9F\x93\x8B${NC}"
-# HOT="${ORANGE}\xF0\x9F\x94\xA5${NC}"
-# WARNING="${RED}\xF0\x9F\x9A\xA8${NC}"
-# RIGHT_ANGLE="${GREEN}\xE2\x88\x9F${NC}"
-#
+NC='\033[0m'
+BOLD='\033[1m'
+
+# Catppuccin Mocha colors
+CAT_ROSEWATER='\033[38;2;245;224;220m'
+CAT_FLAMINGO='\033[38;2;242;205;205m'
+CAT_PINK='\033[38;2;245;194;231m'
+CAT_MAUVE='\033[38;2;203;166;247m'
+CAT_RED='\033[38;2;243;139;168m'
+CAT_MAROON='\033[38;2;235;160;172m'
+CAT_PEACH='\033[38;2;250;179;135m'
+CAT_YELLOW='\033[38;2;249;226;175m'
+CAT_GREEN='\033[38;2;166;227;161m'
+CAT_TEAL='\033[38;2;148;226;213m'
+CAT_SKY='\033[38;2;137;220;235m'
+CAT_SAPPHIRE='\033[38;2;116;199;236m'
+CAT_BLUE='\033[38;2;137;180;250m'
+CAT_LAVENDER='\033[38;2;180;190;254m'
+CAT_TEXT='\033[38;2;205;214;244m'
+CAT_SUBTEXT1='\033[38;2;186;194;222m'
+CAT_SUBTEXT0='\033[38;2;166;173;200m'
+CAT_OVERLAY2='\033[38;2;147;153;178m'
+CAT_OVERLAY1='\033[38;2;127;132;156m'
+CAT_OVERLAY0='\033[38;2;108;112;134m'
+CAT_SURFACE2='\033[38;2;88;91;112m'
+CAT_SURFACE1='\033[38;2;69;71;90m'
+CAT_SURFACE0='\033[38;2;49;50;68m'
+CAT_BASE='\033[38;2;30;30;46m'
+CAT_MANTLE='\033[38;2;24;24;37m'
+CAT_CRUST='\033[38;2;17;17;27m'
+
+# Legacy mappings for easier use
+RED="$CAT_RED"
+GREEN="$CAT_GREEN"
+YELLOW="$CAT_YELLOW"
+BLUE="$CAT_BLUE"
+PURPLE="$CAT_MAUVE"
+CYAN="$CAT_TEAL"
+WHITE="$CAT_TEXT"
+ORANGE="$CAT_PEACH"
+LBLACK="$CAT_SURFACE0"
+LRED="$CAT_RED"
+LGREEN="$CAT_GREEN"
+LYELLOW="$CAT_YELLOW"
+LBLUE="$CAT_BLUE"
+LPURPLE="$CAT_MAUVE"
+LCYAN="$CAT_TEAL"
+
+# Special
+SEA="$CAT_SAPPHIRE"
+OVERWRITE='\e[1A\e[K'
+
+#emoji codes
+CHECK_MARK="${GREEN}\xE2\x9C\x94${NC}"
+X_MARK="${RED}\xE2\x9C\x96${NC}"
+PIN="${RED}\xF0\x9F\x93\x8C${NC}"
+CLOCK="${GREEN}\xE2\x8C\x9B${NC}"
+ARROW="${SEA}\xE2\x96\xB6${NC}"
+BOOK="${RED}\xF0\x9F\x93\x8B${NC}"
+HOT="${ORANGE}\xF0\x9F\x94\xA5${NC}"
+WARNING="${RED}\xF0\x9F\x9A\xA8${NC}"
+RIGHT_ANGLE="${GREEN}\xE2\x88\x9F${NC}"
+
 
 
 set -e
@@ -117,7 +117,7 @@ SPINNER_PID=""
 
 # Show usage/help information
 show_help() {
-  echo -e "${CAT_SAPPHIRE}TechDufus Dotfiles${NC} - Ansible-based dotfiles management"
+  echo -e "${CAT_SAPPHIRE}Armin Dotfiles${NC} - Ansible-based dotfiles management"
   echo ""
   echo -e "${CAT_BLUE}USAGE:${NC}"
   echo "    dotfiles [OPTIONS] [-- ANSIBLE_ARGS]"
@@ -149,7 +149,7 @@ show_help() {
   echo "    All arguments not recognized by dotfiles are passed to ansible-playbook."
   echo "    Common options: -t <tags>, --check, -vvv, --list-tags"
   echo ""
-  echo -e "${CAT_SUBTEXT0}For more information: https://github.com/TechDufus/dotfiles${NC}"
+  echo -e "${CAT_SUBTEXT0}For more information: https://github.com/ArminIrannejad/.dotfiles${NC}"
 }
 
 # Show version information
@@ -158,7 +158,7 @@ show_version() {
   if [[ -d "$DOTFILES_DIR/.git" ]]; then
     git_hash=$(git -C "$DOTFILES_DIR" rev-parse --short HEAD 2>/dev/null || echo "unknown")
   fi
-  echo -e "${CAT_SAPPHIRE}TechDufus Dotfiles${NC} version ${CAT_GREEN}${DOTFILES_VERSION}${NC} (${CAT_SUBTEXT1}${git_hash}${NC})"
+  echo -e "${CAT_SAPPHIRE}Armin Dotfiles${NC} version ${CAT_GREEN}${DOTFILES_VERSION}${NC} (${CAT_SUBTEXT1}${git_hash}${NC})"
 }
 
 # Spinner function that runs in background
@@ -407,15 +407,15 @@ detect_os() {
     echo $(uname -s | tr '[:upper:]' '[:lower:]')
   fi
 }
-
+                                                             
 print_banner() {
   echo ""
-  echo -e "${CAT_SAPPHIRE}  ████████╗███████╗ ██████╗██╗  ██╗██████╗ ██╗   ██╗███████╗██╗   ██╗███████╗${NC}"
-  echo -e "${CAT_SAPPHIRE}  ╚══██╔══╝██╔════╝██╔════╝██║  ██║██╔══██╗██║   ██║██╔════╝██║   ██║██╔════╝${NC}"
-  echo -e "${CAT_SAPPHIRE}     ██║   █████╗  ██║     ███████║██║  ██║██║   ██║█████╗  ██║   ██║███████╗${NC}"
-  echo -e "${CAT_SAPPHIRE}     ██║   ██╔══╝  ██║     ██╔══██║██║  ██║██║   ██║██╔══╝  ██║   ██║╚════██║${NC}"
-  echo -e "${CAT_SAPPHIRE}     ██║   ███████╗╚██████╗██║  ██║██████╔╝╚██████╔╝██║     ╚██████╔╝███████║${NC}"
-  echo -e "${CAT_SAPPHIRE}     ╚═╝   ╚══════╝ ╚═════╝╚═╝  ╚═╝╚═════╝  ╚═════╝ ╚═╝      ╚═════╝ ╚══════╝${NC}"
+  echo -e "${CAT_SAPPHIRE}                 █████╗ ██████╗ ███╗   ███╗██╗███╗   ██╗${NC}"
+  echo -e "${CAT_SAPPHIRE}                ██╔══██╗██╔══██╗████╗ ████║██║████╗  ██║${NC}"
+  echo -e "${CAT_SAPPHIRE}                ███████║██████╔╝██╔████╔██║██║██╔██╗ ██║${NC}"
+  echo -e "${CAT_SAPPHIRE}                ██╔══██║██╔══██╗██║╚██╔╝██║██║██║╚██╗██║${NC}"
+  echo -e "${CAT_SAPPHIRE}                ██║  ██║██║  ██║██║ ╚═╝ ██║██║██║ ╚████║${NC}"
+  echo -e "${CAT_SAPPHIRE}                ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚═╝╚═╝╚═╝  ╚═══╝${NC}"
   echo ""
   echo -e "${CAT_BLUE}      ██████╗  ██████╗ ████████╗███████╗██╗██╗     ███████╗███████╗${NC}"
   echo -e "${CAT_BLUE}      ██╔══██╗██╔═══██╗╚══██╔══╝██╔════╝██║██║     ██╔════╝██╔════╝${NC}"
@@ -425,7 +425,6 @@ print_banner() {
   echo -e "${CAT_BLUE}      ╚═════╝  ╚═════╝    ╚═╝   ╚═╝     ╚═╝╚══════╝╚══════╝╚══════╝${NC}"
   echo ""
 }
-
 # Handle early exit for help/version (before banner and setup)
 if [[ "${SHOW_HELP:-}" == "true" ]]; then
   show_help
@@ -462,7 +461,7 @@ esac
 
 if ! [[ -d "$DOTFILES_DIR" ]]; then
   __task "Downloading dotfiles repository (This may take a minute)"
-  _cmd "git clone --quiet https://github.com/TechDufus/dotfiles.git $DOTFILES_DIR"
+  _cmd "git clone --quiet https://github.com/ArminIrannejad/.dotfiles.git $DOTFILES_DIR"
   _task_done
 else
   __task "Updating dotfiles repository"
@@ -641,7 +640,6 @@ if ! [[ -f "$IS_FIRST_RUN" ]]; then
   echo -e "${ARROW} ${CAT_TEAL}Next steps:${NC}"
   echo -e "   1. Customize your setup: ${CAT_LAVENDER}nvim ~/.dotfiles/group_vars/all.yml${NC}"
   echo -e "   2. Apply changes anytime: ${CAT_LAVENDER}dotfiles${NC}"
-  echo -e "   3. Get help: ${CAT_LAVENDER}https://discord.gg/5M4hjfyRBj${NC}"
   echo ""
   echo -e "${ARROW} ${CAT_TEAL}Please reboot your computer to complete the setup.${NC}"
   echo ""
