@@ -1,0 +1,29 @@
+---
+# roles/neovim/tasks/ubuntu.yml
+
+- name: "Neovim | Ubuntu | Install dependencies"
+  ansible.builtin.apt:
+    name:
+      - cmake
+      - curl
+      - pkg-config
+      - libtool
+      - unzip
+      - ripgrep
+    state: present
+    update_cache: true
+  become: true
+
+- name: "Neovim | Ubuntu | Add Neovim Nightly PPA"
+  ansible.builtin.apt_repository:
+    repo: ppa:neovim-ppa/unstable
+    state: present
+    mode: "0644"
+  become: true
+
+- name: "Neovim | Ubuntu | Install Neovim nightly"
+  ansible.builtin.apt:
+    name: neovim
+    state: latest
+    update_cache: true
+  become: true
