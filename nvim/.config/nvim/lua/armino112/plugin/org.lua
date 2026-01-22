@@ -1,7 +1,8 @@
 return {
   {
     "nvim-orgmode/orgmode",
-    ft = { "org" },
+    lazy = false,
+    -- ft = { "org" },
     dependencies = {
       "nvim-treesitter/nvim-treesitter",
     },
