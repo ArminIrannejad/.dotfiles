@@ -20,7 +20,7 @@ return {
         json = { "prettier", stop_on_first = true, name = "dprint" },
         jsonc = { "prettier", stop_on_first = true, name = "dprint" },
         haskell = { "ormolu" },
-        marksdown = {"marksman"},
+        marksdown = { "marksman" },
       }
     })
 
@@ -42,7 +42,7 @@ return {
     require("mason-lspconfig").setup({
       ensure_installed = { "lua_ls", "pyright" },
       automatic_enable = {
-        exclude = {"hls"}, -- haskell-tools will start hls
+        exclude = { "hls" }, -- haskell-tools will start hls
       }
     })
 
@@ -125,23 +125,25 @@ return {
       end,
     })
 
-    local auto_float = false
-    local function toggle_auto_float()
-      auto_float = not auto_float
-      if auto_float then
-        vim.api.nvim_create_augroup("AutoDiagnosticFloat", { clear = true })
-        vim.api.nvim_create_autocmd("CursorHold", {
-          group = "AutoDiagnosticFloat",
-          callback = function()
-            vim.diagnostic.open_float(nil, { focusable = false })
-          end,
+    local diag_inline = false
+
+    local function toggle_diag_inline()
+      diag_inline = not diag_inline
+
+      if diag_inline then
+        vim.diagnostic.config({
+          virtual_lines = { only_current_line = true },
+          virtual_text  = false,
         })
-        print("Auto diagnostic float: ON")
       else
-        vim.api.nvim_clear_autocmds({ group = "AutoDiagnosticFloat" })
-        print("Auto diagnostic float: OFF")
+        vim.diagnostic.config({
+          virtual_lines = false,
+          virtual_text  = false,
+        })
+        print("Diagnostics inline: OFF")
       end
     end
-    vim.keymap.set("n", "<leader>tf", toggle_auto_float, { desc = "Toggle auto-diagnostic float" })
+
+    vim.keymap.set("n", "<leader>ter", toggle_diag_inline)
   end,
 }
