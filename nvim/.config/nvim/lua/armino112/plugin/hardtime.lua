@@ -6,6 +6,8 @@ return {
       "MunifTanjim/nui.nvim",
       "nvim-lua/plenary.nvim",
     },
-    opts = {},
+    opts = {
+      restriction_mode = "hint", -- block or hint
+    },
   },
 }
