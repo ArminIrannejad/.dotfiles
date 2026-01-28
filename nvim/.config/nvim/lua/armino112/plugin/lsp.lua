@@ -114,7 +114,7 @@ return {
       },
     })
 
-    vim.keymap.set("n", "<leader>er", vim.diagnostic.open_float, { desc = "Show diagnostic" })
+    -- vim.keymap.set("n", "<leader>er", vim.diagnostic.open_float, { desc = "Show diagnostic" })
     vim.keymap.set("n", "<leader>q", vim.diagnostic.setloclist, { desc = "Diagnostics to loclist" })
 
     vim.api.nvim_create_autocmd("LspAttach", {
@@ -125,25 +125,22 @@ return {
       end,
     })
 
-    local diag_inline = false
+    local toggle_virt_lines = false
 
-    local function toggle_diag_inline()
-      diag_inline = not diag_inline
+    local function toggle_virt()
+      toggle_virt_lines = not toggle_virt_lines
 
-      if diag_inline then
+      if toggle_virt then
         vim.diagnostic.config({
-          virtual_lines = { only_current_line = true },
-          virtual_text  = false,
+          virtual_lines = true,
         })
       else
         vim.diagnostic.config({
           virtual_lines = false,
-          virtual_text  = false,
         })
-        print("Diagnostics inline: OFF")
       end
     end
 
-    vim.keymap.set("n", "<leader>ter", toggle_diag_inline)
-  end,
+    vim.keymap.set("n", "<leader>er", toggle_virt)
+  end
 }
