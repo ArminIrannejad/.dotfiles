@@ -1,6 +1,7 @@
 export PATH="$HOME/.dotfiles/tmux:$PATH"
 export PATH="$HOME/.local/src/neovim/bin:$PATH"
 export PATH="/usr/local/go/bin:$PATH"
+export PATH="$HOME/.config/emacs/bin:$PATH"
 
 btime() {
   /usr/bin/time -p "$@" 2> >(awk '

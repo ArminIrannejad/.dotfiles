@@ -10,8 +10,8 @@ return {
       -- Setup orgmode
       vim.g.orgmode_treesitter_installed = false
       require("orgmode").setup({
-        org_agenda_files = { "~/orgfiles/**/*" },
-        org_default_notes_file = "~/orgfiles/refile.org",
+        org_agenda_files = { "~/org/**/*" },
+        org_default_notes_file = "~/org/refile.org",
       })
     end
     -- NOTE: If you are using nvim-treesitter with ~ensure_installed = "all"~ option
