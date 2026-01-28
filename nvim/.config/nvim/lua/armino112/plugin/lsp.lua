@@ -130,7 +130,7 @@ return {
     local function toggle_virt()
       toggle_virt_lines = not toggle_virt_lines
 
-      if toggle_virt then
+      if toggle_virt_lines then
         vim.diagnostic.config({
           virtual_lines = true,
         })
