@@ -46,7 +46,7 @@ return {
 
       vim.keymap.set("n", "<leader>om", function()
         require("telescope.builtin").find_files {
-          cwd = "~/orgfiles"
+          cwd = "~/org"
         }
       end)
 
