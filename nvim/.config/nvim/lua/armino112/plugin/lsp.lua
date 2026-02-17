@@ -17,8 +17,8 @@ return {
   config = function()
     require("conform").setup({
       formatters_by_ft = {
-        json = { "prettier", stop_on_first = true, name = "dprint" },
-        jsonc = { "prettier", stop_on_first = true, name = "dprint" },
+        json = { "prettier" },
+        jsonc = { "prettier" },
         haskell = { "ormolu" },
         marksdown = { "marksman" },
       }
