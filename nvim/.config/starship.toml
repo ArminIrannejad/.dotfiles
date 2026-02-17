@@ -1,25 +1,18 @@
-# don't really care but can be nice to activate
-"$schema" = 'https://starship.rs/config-schema.json' 
-
+"$schema" = "https://starship.rs/config-schema.json"
 add_newline = true
-
 # format = '$all$directory$character'
-
-format ="""
+format = """
 $character\
 $directory
 """
 right_format = "$all"
-
 continuation_prompt = "▸ "
-
 
 # [character]
 # success_symbol = '[➜](bold green)'
 #
 # [package]
 # disabled = true
-
 
 # palette = "catppuccin_latte"
 
@@ -153,6 +146,7 @@ symbol = " "
 
 [conda]
 symbol = " "
+format  = " [$symbol$environment]($style) "
 
 [crystal]
 symbol = " "
@@ -206,13 +200,13 @@ format = "[ $version]($style) "
 [gcloud]
 disabled = true
 symbol = "☁️"
-format = '[$symbol$active]($style) '
+format = "[$symbol$active]($style) "
 
 [guix_shell]
 symbol = ""
 
 [haskell]
-symbol = " " 
+symbol = " "
 
 [haxe]
 symbol = ""
@@ -223,7 +217,7 @@ symbol = ""
 [hostname]
 ssh_only = true
 ssh_symbol = " "
-format = '[$ssh_symbol(bold blue)[$hostname](bold blue)]($style) '
+format = "[$ssh_symbol(bold blue)[$hostname](bold blue)]($style) "
 disabled = false
 
 [java]
@@ -240,7 +234,6 @@ symbol = " "
 format = '[$symbol$context([\(](peach)$namespace[\)](peach))]($style) '
 disabled = true
 
-
 [lua]
 symbol = " "
 
@@ -248,7 +241,7 @@ symbol = " "
 symbol = "󰍛 "
 threshold = 1
 disabled = true
-format = '$symbol[${ram}( | ${swap})]($style) '
+format = "$symbol[${ram}( | ${swap})]($style) "
 
 [meson]
 symbol = "󰔷 "
@@ -327,7 +320,7 @@ symbol = " "
 symbol = " "
 
 [python]
-symbol = "  "
+symbol = " "
 
 [rlang]
 symbol = "󰟔 "
@@ -346,7 +339,7 @@ disabled = true
 bash_indicator = " "
 zsh_indicator = " "
 powershell_indicator = "󰨊 "
-fish_indicator = '󰈺 '
+fish_indicator = "󰈺 "
 
 [swift]
 symbol = " "
@@ -356,11 +349,10 @@ disabled = true
 
 [username]
 disabled = true
-format = '[$user]($style) '
+format = "[$user]($style) "
 
 [zig]
 symbol = " "
-
 
 # [custom.giturl]
 # description = "Display symbol for remote Git server"
