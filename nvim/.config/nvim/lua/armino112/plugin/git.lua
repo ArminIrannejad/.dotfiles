@@ -123,5 +123,48 @@ return {
       },
     },
   },
+
+  {
+    "ThePrimeagen/git-worktree.nvim",
+    dependencies = { "nvim-lua/plenary.nvim", "nvim-telescope/telescope.nvim" },
+    config = function()
+
+      require("git-worktree").setup({
+        change_directory_command = "cd", -- use "tcd" if you want per-tab cwd
+        update_on_change = true,
+        update_on_change_command = "e .",
+        clearjumps_on_change = true,
+        autopush = false,
+      })
+
+      -- telescope extension
+      pcall(function()
+        require("telescope").load_extension("git_worktree")
+      end)
+
+      local Worktree = require("git-worktree")
+      Worktree.on_tree_change(function(op, metadata)
+        if op == Worktree.Operations.Switch then
+          vim.notify(("Worktree: %s"):format(metadata.path))
+        end
+      end)
+    end,
+    keys = {
+      {
+        "<leader>gw",
+        function()
+          require("telescope").extensions.git_worktree.git_worktrees()
+        end,
+        desc = "Worktrees (switch/delete)",
+      },
+      {
+        "<leader>gW",
+        function()
+          require("telescope").extensions.git_worktree.create_git_worktree()
+        end,
+        desc = "Create worktree",
+      },
+    },
+  },
 }
 
