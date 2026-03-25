@@ -29,10 +29,7 @@ local function bottom_split()
 end
 
 local function get_job_id(buf)
-  local ok, job = pcall(vim.api.nvim_buf_get_var, buf, "terminal_job_id")
-  if ok and type(job) == "number" then return job end
-  job = vim.b[buf] and vim.b[buf].terminal_job_id or nil
-  return type(job) == "number" and job or nil
+  return vim.b[buf].terminal_job_id
 end
 
 local function ensure_window_for_buf(buf)
@@ -48,19 +45,15 @@ end
 
 local function find_terminal_by_var(var_name, expected)
   for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-    if vim.api.nvim_buf_is_loaded(buf) and vim.bo[buf].buftype == "terminal" then
-      local ok, val = pcall(vim.api.nvim_buf_get_var, buf, var_name)
-      if ok and val == expected then
-        return buf
-      end
+    if vim.bo[buf].buftype == "terminal" and vim.b[buf][var_name] == expected then
+      return buf
     end
   end
-  return nil
 end
 
 local function open_shell_term(shell)
   local win = bottom_split()
-  if (shell or ""):match("zsh") then
+  if shell:match("zsh") then
     vim.cmd("term zsh")
   else
     vim.cmd("term bash")
@@ -75,18 +68,16 @@ local function get_visual_selection()
     vim.cmd("normal! \27")
   end
 
-  local p1                    = vim.fn.getpos("'<")
-  local p2                    = vim.fn.getpos("'>")
+  local p1 = vim.fn.getpos("'<")
+  local p2 = vim.fn.getpos("'>")
   local line_start, col_start = p1[2], p1[3]
-  local line_end, col_end     = p2[2], p2[3]
+  local line_end, col_end = p2[2], p2[3]
 
   if line_start > line_end or (line_start == line_end and col_start > col_end) then
     line_start, line_end, col_start, col_end = line_end, line_start, col_end, col_start
   end
 
   local lines = vim.fn.getline(line_start, line_end)
-  if #lines == 0 then return "" end
-
   lines[1] = string.sub(lines[1], col_start, #lines[1])
   lines[#lines] = string.sub(lines[#lines], 1, col_end)
 
@@ -110,39 +101,41 @@ end
 vim.keymap.set("n", "<leader>ru", function()
   vim.cmd("w")
 
-  local file    = vim.fn.expand("%:p")
-  local dir     = vim.fn.fnamemodify(file, ":h")
-  local shell   = vim.env.SHELL or "/bin/bash"
+  local file = vim.fn.expand("%:p")
+  local stem = vim.fn.expand("%:t:r")
+  local dir = vim.fn.fnamemodify(file, ":h")
+  local file_escaped = vim.fn.shellescape(file)
+  local stem_escaped = vim.fn.shellescape(stem)
+  local shell = vim.env.SHELL or "/bin/bash"
 
   local runners = {
-    python  = "python",
-    sh      = "bash",
-    zsh     = "zsh",
-    lua     = "lua",
-    go      = "go run",
+    python = "python",
+    sh = "bash",
+    lua = "lua",
+    go = "go run",
     haskell = "runghc",
-    ocaml   = "ocaml",
-    c       = "cc",
+    ocaml = "ocaml",
+    c = "cc",
   }
 
-  local ft      = vim.bo.filetype
-  local exe     = runners[ft]
+  local ft = vim.bo.filetype
+  local exe = runners[ft]
   if not exe then
     vim.notify("No runner configured for filetype: " .. ft, vim.log.levels.WARN)
     return
   end
 
   local build_cmd = {
-    c = function(file, dir)
-      local out = vim.fn.fnamemodify(file, ":r")
+    c = function()
       return table.concat({
         "cc",
-        "-Wall -Wextra -Wpedantic -O",
-        vim.fn.shellescape(file),
+        "-Wall -Wextra -Wpedantic -O2",
+        file_escaped,
         "-o",
-        vim.fn.shellescape(out),
+        stem_escaped,
         "&&",
-        vim.fn.shellescape(out),
+        "time",
+        "./" .. stem_escaped,
       }, " ")
     end,
   }
@@ -150,30 +143,29 @@ vim.keymap.set("n", "<leader>ru", function()
   local cmd_builder = build_cmd[ft]
   local runner_cmd
   if cmd_builder then
-    runner_cmd = "time " .. cmd_builder(file, dir)
+    runner_cmd = "\n" .. cmd_builder()
   else
-    runner_cmd = "time " .. exe .. " " .. vim.fn.shellescape(file)
+    runner_cmd = "\n" .. "time " .. exe .. " " .. file_escaped
   end
-
 
   local term_buf = find_runner_term()
   local term_win
   if not term_buf then
     term_buf, term_win = open_shell_term(shell)
-    pcall(vim.api.nvim_buf_set_var, term_buf, "is_runner", true)
+    vim.b[term_buf].is_runner = true
   else
     term_win = ensure_runner_window(term_buf)
   end
 
   local job = get_job_id(term_buf)
-  if not job then
-    vim.notify("Runner terminal has no job id yet.", vim.log.levels.ERROR)
-    return
-  end
-
   local code_win = vim.api.nvim_get_current_win()
-  vim.fn.chansend(job, "\nprintf '\\n===== RUN: %s =====\\n' \"$(date '+%H:%M:%S')\"\n")
-  local cmd = "cd " .. vim.fn.shellescape(dir) .. " && " .. runner_cmd .. "\n"
+  local cmd = table.concat({
+    "cd " .. vim.fn.shellescape(dir),
+    "clear",
+    "printf '\\n===== RUN: %s =====\\n' \"$(date '+%H:%M:%S')\"",
+    runner_cmd,
+  }, " && ") .. "\n"
+
   vim.fn.chansend(job, cmd)
 
   if TERMINAL_MODE then
@@ -194,10 +186,10 @@ end)
 local REPL_FOLLOW = false
 
 local repls = {
-  python  = "ipython",
-  lua     = "lua -i",
+  python = "ipython",
+  lua = "lua -i",
   haskell = "ghci",
-  ocaml   = "ocaml",
+  ocaml = "ocaml",
 }
 
 local function find_repl_term(ft)
@@ -211,64 +203,56 @@ end
 local function get_or_start_repl(ft, dir, shell)
   local buf = find_repl_term(ft)
   local win
+
   if not buf then
     buf, win = open_shell_term(shell)
 
     local job = get_job_id(buf)
-    if not job then
-      vim.notify("", vim.log.levels.ERROR)
-      return nil, nil
-    end
-
     vim.fn.chansend(job, "cd " .. vim.fn.shellescape(dir) .. "\n")
 
     local repl_cmd = repls[ft]
     if not repl_cmd then
-      vim.notify("riperoni" .. ft, vim.log.levels.WARN)
-      return nil, nil
+      vim.notify("riperoni " .. ft, vim.log.levels.WARN)
+      return
     end
-    vim.fn.chansend(job, repl_cmd .. "\n")
 
-    pcall(vim.api.nvim_buf_set_var, buf, "repl_ft", ft)
+    vim.fn.chansend(job, repl_cmd .. "\n")
+    vim.b[buf].repl_ft = ft
   else
     win = ensure_repl_window(buf)
   end
+
   return buf, win
 end
 
 local function send_to_repl(repl_buf, text)
-  if not text or text == "" then return end
   local job = get_job_id(repl_buf)
-  if not job then
-    vim.notify("", vim.log.levels.ERROR)
-    return
+  local start_bp = "\x1b[200~"
+  local end_bp = "\x1b[201~"
+
+  if not text:match("\n$") then
+    text = text .. "\n"
   end
 
-  local start_bp = "\x1b[200~"
-  local end_bp   = "\x1b[201~"
-  if not text:match("\n$") then text = text .. "\n" end
   vim.fn.chansend(job, start_bp .. text .. end_bp .. "\n")
 end
 
 vim.keymap.set("x", "<leader>ri", function()
-  local ft    = vim.bo.filetype
-  local file  = vim.fn.expand("%:p")
-  local dir   = vim.fn.fnamemodify(file, ":h")
+  local ft = vim.bo.filetype
+  local file = vim.fn.expand("%:p")
+  local dir = vim.fn.fnamemodify(file, ":h")
   local shell = vim.env.SHELL or "/bin/bash"
 
   if not repls[ft] then
-    vim.notify("riperoni" .. ft, vim.log.levels.WARN)
+    vim.notify("riperoni " .. ft, vim.log.levels.WARN)
     return
   end
 
   local text = get_visual_selection()
-  if text == "" then
-    vim.notify("what u running?", vim.log.levels.WARN)
+  local repl_buf, repl_win = get_or_start_repl(ft, dir, shell)
+  if not repl_buf then
     return
   end
-
-  local repl_buf, repl_win = get_or_start_repl(ft, dir, shell)
-  if not repl_buf then return end
 
   local code_win = vim.api.nvim_get_current_win()
   send_to_repl(repl_buf, text)
@@ -284,65 +268,61 @@ vim.keymap.set("x", "<leader>ri", function()
   end
 end)
 
-
 -- =============================================================================
 -- run "cell" in REPL
 -- =============================================================================
 
-local CELL_MARKER = "%%-%%"
+local CELL_MARKER = "# COMMAND ----------"
 
 local function line_is_marker(s)
-  if CELL_MARKER == "" or s == nil then return false end
   return s:find(CELL_MARKER, 1, true) ~= nil
 end
 
-
 local function get_current_cell_range()
   local total = vim.api.nvim_buf_line_count(0)
-  local cur   = vim.fn.line(".")
-  local up    = cur
+  local cur = vim.fn.line(".")
+  local up = cur
+
   while up >= 1 do
     local l = vim.api.nvim_buf_get_lines(0, up - 1, up, false)[1]
-    if line_is_marker(l) then break end
+    if line_is_marker(l) then
+      break
+    end
     up = up - 1
   end
-  local start_line = (up >= 1) and (up + 1) or 1
 
+  local start_line = (up >= 1) and (up + 1) or 1
   local down = cur
+
   while down <= total do
     local l = vim.api.nvim_buf_get_lines(0, down - 1, down, false)[1]
-    if line_is_marker(l) then break end
+    if line_is_marker(l) then
+      break
+    end
     down = down + 1
   end
-  local end_line = (down <= total) and (down - 1) or total
 
-  if end_line < start_line then
-    return cur, cur
-  end
+  local end_line = (down <= total) and (down - 1) or total
   return start_line, end_line
 end
 
 local function get_current_cell_text()
   local s, e = get_current_cell_range()
   local lines = vim.api.nvim_buf_get_lines(0, s - 1, e, false)
-  if #lines == 0 then return "" end
   return table.concat(lines, "\n") .. "\n"
 end
 
 vim.keymap.set("n", "<leader>rc", function()
-  local ft    = vim.bo.filetype
-  local file  = vim.fn.expand("%:p")
-  local dir   = vim.fn.fnamemodify(file, ":h")
+  local ft = vim.bo.filetype
+  local file = vim.fn.expand("%:p")
+  local dir = vim.fn.fnamemodify(file, ":h")
   local shell = vim.env.SHELL or "/bin/bash"
 
-  local text  = get_current_cell_text()
-  if text == "" then
-    vim.notify("what u running?", vim.log.levels.WARN)
+  local text = get_current_cell_text()
+  local repl_buf, repl_win = get_or_start_repl(ft, dir, shell)
+  if not repl_buf then
     return
   end
-
-  local repl_buf, repl_win = get_or_start_repl(ft, dir, shell)
-  if not repl_buf then return end
 
   local code_win = vim.api.nvim_get_current_win()
   send_to_repl(repl_buf, text)
