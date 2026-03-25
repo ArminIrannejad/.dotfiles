@@ -92,6 +92,9 @@ return {
           globalstatus = true,
         },
         sections = {
+          -- lualine_c = {
+          --   {"filename", path = 1,} --1=relative 2=absolute 3=absolute with ~
+          -- },
           lualine_x = {
             { lazy_status.updates, cond = lazy_status.has_updates, color = { fg = "#ff9e64" } },
             "encoding",
