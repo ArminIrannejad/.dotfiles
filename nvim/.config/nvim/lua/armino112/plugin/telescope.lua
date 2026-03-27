@@ -31,6 +31,28 @@ return {
           hidden = false,
         })
       end)
+      vim.keymap.set("n", "<leader>fc", function()
+        local oil = require("oil")
+        local dir = oil.get_current_dir()
+
+        if dir then
+          require("telescope.builtin").find_files({ cwd = dir })
+        else
+          require("telescope.builtin").find_files({
+            cwd = vim.fn.expand("%:p:h"),
+          })
+        end
+      end)
+      vim.keymap.set("n", "<leader>fa", function()
+        require("telescope.builtin").find_files {
+          cwd = vim.fs.normalize(vim.fn.expand("~/work"))
+        }
+      end)
+      vim.keymap.set("n", "<leader>fp", function()
+        require("telescope.builtin").find_files {
+          cwd = vim.fs.normalize(vim.fn.expand("~/personal"))
+        }
+      end)
       vim.keymap.set("n", "<leader>en", function()
         require("telescope.builtin").find_files {
           cwd = vim.fn.stdpath("config")
