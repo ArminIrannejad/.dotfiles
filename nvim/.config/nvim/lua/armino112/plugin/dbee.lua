@@ -45,8 +45,8 @@ return {
           -- next/previous page
           { key = "L",          mode = "",  action = "page_next" },
           { key = "H",          mode = "",  action = "page_prev" },
-          { key = "]",          mode = "",  action = "page_last" },
-          { key = "[",          mode = "",  action = "page_first" },
+          { key = "A",          mode = "",  action = "page_first" },
+          { key = "S",          mode = "",  action = "page_last" },
           -- yank rows as csv/json
           { key = "<leader>yj", mode = "n", action = "yank_current_json" },
           { key = "<leader>yj", mode = "v", action = "yank_selection_json" },
