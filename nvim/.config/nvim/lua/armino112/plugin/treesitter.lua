@@ -1,21 +1,17 @@
-return {
-  {
-    'nvim-treesitter/nvim-treesitter',
-    lazy = false,
-    build = ':TSUpdate',
-    opts = {
-      ensure_installed = {
-        "python",
-        "c",
-        "bash",
-        "lua",
-        "json",
-        "sql",
-        "haskell",
-      },
-      indent = { enable = true },
-      highlight = { enable = true },
-      auto_install = true,
-    },
-  },
-}
+vim.pack.add({
+  'https://github.com/nvim-treesitter/nvim-treesitter',
+})
+
+require('nvim-treesitter').setup({
+  install_dir = vim.fn.stdpath('data') .. '/site',
+})
+
+require('nvim-treesitter').install({
+  "python",
+  "c",
+  "bash",
+  "lua",
+  "json",
+  "sql",
+  "haskell",
+})

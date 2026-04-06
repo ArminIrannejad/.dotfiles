@@ -1,22 +1,11 @@
-return {
-  {
-    "hat0uma/csvview.nvim",
-    cmd = "CsvViewToggle",
-    config = function()
-      require("csvview").setup()
-    end,
-  },
 
-  {
-    "cameron-wags/rainbow_csv.nvim",
-    ft = {
-      "csv",
-      "tsv",
-    },
-    module = {
-      "rainbow_csv",
-      "rainbow_csv.fns",
-    },
-    opts = {},
-  },
-}
+vim.pack.add({
+  'https://github.com/hat0uma/csvview.nvim',
+  'https://github.com/cameron-wags/rainbow_csv.nvim',
+})
+
+require("csvview").setup()
+
+pcall(function()
+  require("rainbow_csv").setup({})
+end)

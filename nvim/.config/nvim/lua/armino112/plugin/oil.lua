@@ -1,51 +1,47 @@
-return {
-  {
-    "stevearc/oil.nvim",
-    dependencies = { "nvim-tree/nvim-web-devicons" },
-    config = function()
-      CustomOilBar = function()
-        local path = vim.fn.expand("%")
-        path = path:gsub("oil://", "")
-        return "  " .. vim.fn.fnamemodify(path, ":.")
-      end
+vim.pack.add({
+  { src = 'https://github.com/stevearc/oil.nvim' },
+  { src = 'https://github.com/nvim-tree/nvim-web-devicons' },
+})
 
-      require("oil").setup({
-        columns = {
-          "icon",
-          "permissions",
-          "size",
-          "mtime",
-          "user",
-        },
+CustomOilBar = function()
+  local path = vim.fn.expand("%")
+  path = path:gsub("oil://", "")
+  return "  " .. vim.fn.fnamemodify(path, ":.")
+end
 
-        keymaps = {
-          ["<C-s>"] = false,
-          ["<C-n>"] = false,
-          ["<C-t>"] = false,
-          ["<C-h>"] = false,
-          ["<BS>"] = "actions.parent",
-          ["C"] = "actions.cd",
-          ["~"] = {
-            callback = function()
-              require("oil").open(vim.fn.expand("~"))
-            end,
-          },
-        },
+require("oil").setup({
+  columns = {
+    "icon",
+    "permissions",
+    "size",
+    "mtime",
+    "user",
+  },
 
-        win_options = {
-          winbar = nil
-        },
+  keymaps = {
+    ["<C-s>"] = false,
+    ["<C-n>"] = false,
+    ["<C-t>"] = false,
+    ["<C-h>"] = false,
+    ["<BS>"] = "actions.parent",
+    ["C"] = "actions.cd",
+    ["~"] = {
+      callback = function()
+        require("oil").open(vim.fn.expand("~"))
+      end,
+    },
+  },
 
-        view_options = {
-          show_hidden = true,
-          is_always_hidden = function(name)
-            return name == ".." or name == "../"
-          end,
+  win_options = {
+    winbar = nil,
+  },
 
-        },
-      })
-
-      vim.keymap.set("n", "<leader>pv", "<CMD>Oil<CR>", { desc = "Open parent directory" })
+  view_options = {
+    show_hidden = true,
+    is_always_hidden = function(name)
+      return name == ".." or name == "../"
     end,
   },
-}
+})
+
+vim.keymap.set("n", "<leader>pv", "<CMD>Oil<CR>", { desc = "Open parent directory" })
