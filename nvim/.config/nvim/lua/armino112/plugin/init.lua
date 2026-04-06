@@ -12,6 +12,7 @@ local plugins = {
   "lsp",
   "lualine",
   "mini",
+  "multicursor",
   "oil",
   "org",
   "showkeys",
