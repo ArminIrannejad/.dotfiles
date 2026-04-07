@@ -31,11 +31,11 @@ local function mode_palette()
   local red    = pick_color({ "DiagnosticError", "ErrorMsg", "Error", "DiffDelete" }, "fg")
 
   return {
-    blue   = blue   or "#65D1FF",
-    green  = green  or "#27AE60",
+    blue   = blue or "#65D1FF",
+    green  = green or "#27AE60",
     violet = violet or "#FF61EF",
     yellow = yellow or "#FFDA7B",
-    red    = red    or "#FF4A4A",
+    red    = red or "#FF4A4A",
   }
 end
 
@@ -44,43 +44,43 @@ local function build_theme()
   local nc   = hl("StatusLineNC")
   local norm = hl("Normal")
 
-  base.bg = base.bg or norm.bg or "#112638"
-  base.fg = base.fg or norm.fg or "#c3ccdc"
-  nc.bg   = nc.bg   or base.bg
-  nc.fg   = nc.fg   or base.fg
+  base.bg    = base.bg or norm.bg or "#112638"
+  base.fg    = base.fg or norm.fg or "#c3ccdc"
+  nc.bg      = nc.bg or base.bg
+  nc.fg      = nc.fg or base.fg
 
   local mode = mode_palette()
 
   return {
     normal = {
-      a = { bg = mode.blue,   fg = base.bg, gui = "bold" },
-      b = { bg = base.bg,     fg = base.fg },
-      c = { bg = base.bg,     fg = base.fg },
+      a = { bg = mode.blue, fg = base.bg, gui = "bold" },
+      b = { bg = base.bg, fg = base.fg },
+      c = { bg = base.bg, fg = base.fg },
     },
     insert = {
-      a = { bg = mode.green,  fg = base.bg, gui = "bold" },
-      b = { bg = base.bg,     fg = base.fg },
-      c = { bg = base.bg,     fg = base.fg },
+      a = { bg = mode.green, fg = base.bg, gui = "bold" },
+      b = { bg = base.bg, fg = base.fg },
+      c = { bg = base.bg, fg = base.fg },
     },
     visual = {
       a = { bg = mode.violet, fg = base.bg, gui = "bold" },
-      b = { bg = base.bg,     fg = base.fg },
-      c = { bg = base.bg,     fg = base.fg },
+      b = { bg = base.bg, fg = base.fg },
+      c = { bg = base.bg, fg = base.fg },
     },
     command = {
       a = { bg = mode.yellow, fg = base.bg, gui = "bold" },
-      b = { bg = base.bg,     fg = base.fg },
-      c = { bg = base.bg,     fg = base.fg },
+      b = { bg = base.bg, fg = base.fg },
+      c = { bg = base.bg, fg = base.fg },
     },
     replace = {
-      a = { bg = mode.red,    fg = base.bg, gui = "bold" },
-      b = { bg = base.bg,     fg = base.fg },
-      c = { bg = base.bg,     fg = base.fg },
+      a = { bg = mode.red, fg = base.bg, gui = "bold" },
+      b = { bg = base.bg, fg = base.fg },
+      c = { bg = base.bg, fg = base.fg },
     },
     inactive = {
-      a = { bg = nc.bg,       fg = nc.fg, gui = "bold" },
-      b = { bg = nc.bg,       fg = nc.fg },
-      c = { bg = nc.bg,       fg = nc.fg },
+      a = { bg = nc.bg, fg = nc.fg, gui = "bold" },
+      b = { bg = nc.bg, fg = nc.fg },
+      c = { bg = nc.bg, fg = nc.fg },
     },
   }
 end
@@ -93,7 +93,7 @@ local function setup_lualine()
     },
     sections = {
       lualine_c = {
-        { "filename", path = 3 },
+        { "filename", path = 3 }, --1=relative 2=absolute 3=absolute with ~
       },
       lualine_x = {
         "encoding",
