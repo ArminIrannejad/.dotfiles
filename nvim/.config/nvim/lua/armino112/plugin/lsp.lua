@@ -1,5 +1,3 @@
--- lua/armino112/plugin/lsp.lua
-
 vim.pack.add({
   { src = 'https://github.com/neovim/nvim-lspconfig' },
   { src = 'https://github.com/stevearc/conform.nvim' },
@@ -40,13 +38,13 @@ vim.lsp.enable("ocamllsp")
 -- require("fidget").setup({})
 require("mason").setup()
 require("mason-lspconfig").setup({
-  ensure_installed = { "lua_ls", "pyright" },
+  ensure_installed = { "lua_ls", "basedpyright"},
   automatic_enable = {
     exclude = { "hls" },
   }
 })
 
-vim.lsp.config("pyright", {
+vim.lsp.config("basedpyright", {
   capabilities = capabilities,
   settings = {
     python = {
@@ -59,7 +57,7 @@ vim.lsp.config("pyright", {
     },
   },
 })
-vim.lsp.enable("pyright")
+vim.lsp.enable("basedpyright")
 
 vim.lsp.config("lua_ls", {
   capabilities = capabilities,
