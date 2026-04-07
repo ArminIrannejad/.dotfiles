@@ -56,32 +56,6 @@ fi
 
 [ -f "$HOME/.zsh_profile" ] && source "$HOME/.zsh_profile"
 
-export CONDA_CHANGEPS1=false
-
-# # >>> conda initialize >>>
-# # !! Contents within this block are managed by 'conda init' !!
-# __conda_setup="$('/home/armino112/anaconda3/bin/conda' 'shell.zsh' 'hook' 2> /dev/null)"
-# if [ $? -eq 0 ]; then
-#     eval "$__conda_setup"
-# else
-#     if [ -f "/home/armino112/anaconda3/etc/profile.d/conda.sh" ]; then
-#         . "/home/armino112/anaconda3/etc/profile.d/conda.sh"
-#     else
-#         export PATH="/home/armino112/anaconda3/bin:$PATH"
-#     fi
-# fi
-# unset __conda_setup
-# # <<< conda initialize <<<
-
-__lazy_conda_init() {
-  unset -f conda __lazy_conda_init
-  eval "$('/home/armino112/anaconda3/bin/conda' shell.zsh hook 2> /dev/null)"
-}
-
-conda() {
-  __lazy_conda_init
-  conda "$@"
-}
 # Created by `pipx` on 2025-08-25 11:32:50
 export PATH="$PATH:/home/armino112/.local/bin"
 
