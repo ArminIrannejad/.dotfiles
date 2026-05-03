@@ -19,7 +19,6 @@ local plugins = {
   "telescope",
   "treesitter",
   "trouble",
-  "undotree",
   "vimbegood",
 }
 

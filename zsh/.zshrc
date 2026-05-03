@@ -8,14 +8,12 @@ setopt APPEND_HISTORY
 setopt INC_APPEND_HISTORY
 setopt SHARE_HISTORY
 
-setopt HIST_IGNORE_DUPS     
-setopt HIST_IGNORE_ALL_DUPS  
-setopt HIST_FIND_NO_DUPS  
-setopt HIST_IGNORE_SPACE   
-setopt HIST_REDUCE_BLANKS   
+setopt HIST_IGNORE_DUPS
+setopt HIST_IGNORE_ALL_DUPS
+setopt HIST_FIND_NO_DUPS
+setopt HIST_IGNORE_SPACE
+setopt HIST_REDUCE_BLANKS
 setopt EXTENDED_HISTORY
-
-
 
 ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=8'
 ZSH_AUTOSUGGEST_USE_ASYNC=1
@@ -28,6 +26,25 @@ function zvm_after_init() {
 
 ZSH_PLUGIN_DIR="$HOME/.zsh/plugins"
 
+# completion styles must be set before compinit
+zstyle ':completion:*' menu no
+zstyle ':completion:*:descriptions' format '[%d]'
+zstyle ':completion:*' list-colors ${(s.:.)LS_COLORS}
+
+autoload -U compinit
+compinit
+
+[ -f /usr/share/doc/fzf/examples/key-bindings.zsh ] && source /usr/share/doc/fzf/examples/key-bindings.zsh
+[ -f /usr/share/doc/fzf/examples/completion.zsh ] && source /usr/share/doc/fzf/examples/completion.zsh
+
+# source <(fzf --zsh)
+
+if [ -f "$ZSH_PLUGIN_DIR/fzf-tab/fzf-tab.plugin.zsh" ]; then
+  source "$ZSH_PLUGIN_DIR/fzf-tab/fzf-tab.plugin.zsh"
+fi
+
+zstyle ':fzf-tab:*' switch-group '<' '>'
+
 if [ -f "$ZSH_PLUGIN_DIR/zsh-autosuggestions/zsh-autosuggestions.zsh" ]; then
   source "$ZSH_PLUGIN_DIR/zsh-autosuggestions/zsh-autosuggestions.zsh"
 fi
@@ -36,16 +53,6 @@ if [ -f "$ZSH_PLUGIN_DIR/zsh-history-substring-search/zsh-history-substring-sear
   source "$ZSH_PLUGIN_DIR/zsh-history-substring-search/zsh-history-substring-search.zsh"
 fi
 
-source /usr/share/doc/fzf/examples/key-bindings.zsh
-source /usr/share/doc/fzf/examples/completion.zsh
-
-
-bindkey -M viins '^[[A' history-substring-search-up
-bindkey -M viins '^[[B' history-substring-search-down
-bindkey '^[[A' history-substring-search-up
-bindkey '^[[B' history-substring-search-down
-
-
 if [ -f "$ZSH_PLUGIN_DIR/zsh-vi-mode/zsh-vi-mode.plugin.zsh" ]; then
   source "$ZSH_PLUGIN_DIR/zsh-vi-mode/zsh-vi-mode.plugin.zsh"
 fi
@@ -53,6 +60,11 @@ fi
 if [ -f "$ZSH_PLUGIN_DIR/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" ]; then
   source "$ZSH_PLUGIN_DIR/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
 fi
+
+bindkey -M viins '^[[A' history-substring-search-up
+bindkey -M viins '^[[B' history-substring-search-down
+bindkey '^[[A' history-substring-search-up
+bindkey '^[[B' history-substring-search-down
 
 [ -f "$HOME/.zsh_profile" ] && source "$HOME/.zsh_profile"
 

@@ -36,6 +36,8 @@ vim.pack.add({
   { src = 'https://github.com/zenbones-theme/zenbones.nvim', name = 'zenbones.nvim' },
   { src = 'https://github.com/rktjmp/lush.nvim', name = 'lush.nvim' },
   { src = 'https://github.com/maxmx03/fluoromachine.nvim', name = 'fluoromachine.nvim' },
+  { src = 'https://github.com/dasupradyumna/midnight.nvim', name = 'midnight.nvim' },
+  { src = 'https://github.com/Shatur/neovim-ayu', name = 'ayu' },
 })
 
 require("catppuccin").setup({
@@ -115,6 +117,10 @@ require("cyberdream").setup({
 
 require("everblush").setup({})
 
+require("midnight").setup({})
+
+require("ayu").setup({})
+
 require("neofusion").setup({
   italic = {
     strings = false,
@@ -136,12 +142,10 @@ require("tokyonight").setup({
   },
 })
 
--- Optional, only if you want config now:
--- local fm = require("fluoromachine")
--- fm.setup({
---   glow = true,
---   theme = "fluoromachine",
---   transparent = true,
--- })
 
 vim.cmd.colorscheme("gruber-darker")
+-- vim.cmd([[
+--   highlight Normal guibg=NONE ctermbg=NONE
+--   highlight NormalNC guibg=NONE ctermbg=NONE
+--   highlight EndOfBuffer guibg=NONE ctermbg=NONE 
+-- ]])
