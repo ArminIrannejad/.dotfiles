@@ -12,7 +12,10 @@ vim.keymap.set("n", "<leader>u", vim.cmd.Undotree)
 -- old school vim but want it enabled.
 vim.opt.path:append("**")
 vim.opt.wildmenu = true
+vim.opt.wildmode = "longest:full,full"
 vim.opt.wildignore:append({ "*.o", "*.hi", "*.so" })
+vim.opt.wildoptions:append('pum') 
+vim.opt.wildoptions:append('fuzzy')
 vim.opt.grepprg = 'rg --vimgrep --no-messages --smart-case'
 
 
