@@ -15,4 +15,5 @@ require('nvim-treesitter').install({
   "sql",
   "haskell",
   "markdown",
+  "vim",
 })
