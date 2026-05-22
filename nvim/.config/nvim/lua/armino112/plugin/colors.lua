@@ -149,3 +149,17 @@ vim.cmd.colorscheme("gruber-darker")
 --   highlight NormalNC guibg=NONE ctermbg=NONE
 --   highlight EndOfBuffer guibg=NONE ctermbg=NONE 
 -- ]])
+
+-- vim.api.nvim_set_hl(0, "MiniJump", {
+--   fg = "#ffffff",
+--   bg = "#ff0000",
+--   bold = true,
+--   nocombine = true,
+-- })
+
+vim.api.nvim_set_hl(0, "MiniJump", {
+  sp = "#cc241d", 
+  -- undercurl = true,
+  underline = true,
+  nocombine = true,
+})
