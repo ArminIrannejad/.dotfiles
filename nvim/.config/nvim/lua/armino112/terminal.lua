@@ -10,14 +10,6 @@ vim.api.nvim_create_autocmd("TermOpen", {
 
 vim.keymap.set("t", "<Esc><Esc>", "<C-\\><C-n>")
 
-vim.keymap.set("n", "<space>ts", function()
-  vim.cmd.new()
-  vim.cmd.wincmd("J")
-  vim.api.nvim_win_set_height(0, 12)
-  vim.wo.winfixheight = true
-  vim.cmd.term()
-end)
-
 local SPLIT_HEIGHT = 15
 
 local function bottom_split()
@@ -83,6 +75,45 @@ local function get_visual_selection()
 
   return table.concat(lines, "\n")
 end
+
+local function find_win_for_buf(buf)
+  if not buf then return nil end
+  for _, w in ipairs(vim.api.nvim_list_wins()) do
+    if vim.api.nvim_win_get_buf(w) == buf then return w end
+  end
+end
+
+local function is_terminal_alive(buf)
+  local job = vim.b[buf].terminal_job_id
+  if not job then return false end
+  return vim.fn.jobwait({ job }, 0)[1] == -1
+end
+
+--=====================
+-- Toggle scratch
+-- ====================
+vim.keymap.set("n", "<leader>ts", function()
+  local buf = find_terminal_by_var("is_ts", true)
+
+  if buf and not is_terminal_alive(buf) then
+    vim.api.nvim_buf_delete(buf, { force = true })
+    buf = nil
+  end
+
+  local visible = find_win_for_buf(buf) ~= nil
+  visible = not visible
+
+  if visible then
+    if buf then
+      vim.api.nvim_win_set_buf(bottom_split(), buf)
+    else
+      local new_buf = open_shell_term(vim.env.SHELL or "/bin/bash")
+      vim.b[new_buf].is_ts = true
+    end
+  else
+    vim.api.nvim_win_close(find_win_for_buf(buf), false)
+  end
+end)
 
 -- ============================================================================
 -- Run buffer in term
