@@ -14,7 +14,7 @@ vim.opt.path:append("**")
 vim.opt.wildmenu = true
 vim.opt.wildmode = "longest:full,full"
 vim.opt.wildignore:append({ "*.o", "*.hi", "*.so" })
-vim.opt.wildoptions:append('pum') 
+vim.opt.wildoptions:append('pum')
 vim.opt.wildoptions:append('fuzzy')
 vim.opt.grepprg = 'rg --vimgrep --no-messages --smart-case'
 
@@ -52,11 +52,15 @@ vim.opt.undofile = true
 vim.opt.smoothscroll = true
 vim.opt.hlsearch = false
 vim.opt.incsearch = true
-vim.opt.cursorline = false
+vim.opt.cursorline = true
+vim.opt.cursorlineopt = "number"
 vim.opt.termguicolors = true
 
 vim.opt.scrolloff = 8
 vim.opt.signcolumn = "yes"
 vim.opt.isfname:append("@-@")
 
+vim.opt.fillchars = { fold = " " }
+vim.opt.foldmethod = "indent"
+vim.opt.foldlevel = 99
 vim.opt.updatetime = 50

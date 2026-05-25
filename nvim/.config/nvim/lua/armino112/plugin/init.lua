@@ -1,6 +1,6 @@
 local plugins = {
   "abolish",
-  "cmdline",
+  -- "cmdline",
   "colors",
   "compile",
   "csv",
