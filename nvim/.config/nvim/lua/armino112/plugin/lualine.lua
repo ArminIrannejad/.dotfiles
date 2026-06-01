@@ -85,6 +85,23 @@ local function build_theme()
   }
 end
 
+local function shortened_filename()
+  local path = vim.fn.expand("%:~:.")
+  if path == "" then
+    return "[No Name]"
+  end
+
+  local parts = vim.split(path, "/", { plain = true })
+  local max_depth = 5
+
+  if #parts > max_depth then
+    local sliced = vim.list_slice(parts, #parts - max_depth + 1, #parts)
+    return ".../" .. table.concat(sliced, "/")
+  end
+  return path
+end
+
+
 local function setup_lualine()
   lualine.setup({
     options = {
@@ -93,7 +110,8 @@ local function setup_lualine()
     },
     sections = {
       lualine_c = {
-        { "filename", path = 3 }, --1=relative 2=absolute 3=absolute with ~
+        shortened_filename,
+        -- { "filename", path = 3 }, --1=relative 2=absolute 3=absolute with ~
       },
       lualine_x = {
         "encoding",
