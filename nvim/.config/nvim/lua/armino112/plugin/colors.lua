@@ -7,6 +7,9 @@ vim.g.nord_italic_comments = false
 vim.g.gruvbox_material_enable_italic = 0
 vim.g.gruvbox_material_disable_italic_comment = 1
 
+vim.g.sonokai_enable_italic = 0
+vim.g.sonokai_disable_italic_comment = 1
+
 vim.g.moonflyItalics = false
 
 vim.pack.add({
@@ -38,6 +41,7 @@ vim.pack.add({
   { src = 'https://github.com/maxmx03/fluoromachine.nvim', name = 'fluoromachine.nvim' },
   { src = 'https://github.com/dasupradyumna/midnight.nvim', name = 'midnight.nvim' },
   { src = 'https://github.com/Shatur/neovim-ayu', name = 'ayu' },
+  { src = 'https://github.com/sainnhe/sonokai', name = 'sonokai' },
 })
 
 require("catppuccin").setup({

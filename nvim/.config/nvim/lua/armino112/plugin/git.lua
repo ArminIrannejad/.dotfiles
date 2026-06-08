@@ -1,6 +1,5 @@
 vim.pack.add({
   { src = 'https://github.com/nvim-lua/plenary.nvim', name = 'plenary.nvim' },
-  { src = 'https://github.com/nvim-telescope/telescope.nvim'},
 
   { src = 'https://github.com/NeogitOrg/neogit' },
   { src = 'https://github.com/sindrets/diffview.nvim' },
@@ -62,38 +61,22 @@ vim.keymap.set("n", "<leader>gdD", function()
 end, { desc = "Diff vs HEAD" })
 
 vim.keymap.set("n", "<leader>gdc", function()
-  local builtin = require("telescope.builtin")
+  local file = vim.fn.fnameescape(vim.fn.expand("%"))
 
-  builtin.git_commits({
-    prompt_title = "Diff current file vs commit",
-    attach_mappings = function(prompt_bufnr, map)
-      local actions = require("telescope.actions")
-      local action_state = require("telescope.actions.state")
-
-      local function open_diffview_for_selection()
-        local entry = action_state.get_selected_entry()
-        actions.close(prompt_bufnr)
-
-        local sha = entry.value
-          or entry.commit
-          or (entry.ordinal and entry.ordinal:match("^(%w+)"))
-
-        if not sha then
-          vim.notify("Could not read commit SHA", vim.log.levels.WARN)
-          return
-        end
-
-        local file = vim.fn.fnameescape(vim.fn.expand("%"))
-        vim.cmd("DiffviewOpen " .. sha .. " -- " .. file)
+  Snacks.picker.git_log({
+    title = "Diff current file vs commit",
+    layout = "vertical",
+    confirm = function(picker, item)
+      picker:close()
+      local sha = item.commit or item.hash or item.text:match("^(%S+)")
+      if not sha then
+        vim.notify("Could not read commit SHA", vim.log.levels.WARN)
+        return
       end
-
-      map("i", "<CR>", open_diffview_for_selection)
-      map("n", "<CR>", open_diffview_for_selection)
-      return true
+      vim.cmd("DiffviewOpen " .. sha .. " -- " .. file)
     end,
   })
 end, { desc = "Diff vs chosen commit" })
-
 require("git-worktree").setup({
   change_directory_command = "cd",
   update_on_change = true,
@@ -102,11 +85,8 @@ require("git-worktree").setup({
   autopush = false,
 })
 
-pcall(function()
-  require("telescope").load_extension("git_worktree")
-end)
-
 local Worktree = require("git-worktree")
+
 Worktree.on_tree_change(function(op, metadata)
   if op == Worktree.Operations.Switch then
     vim.notify(("Worktree: %s"):format(metadata.path))
@@ -114,9 +94,43 @@ Worktree.on_tree_change(function(op, metadata)
 end)
 
 vim.keymap.set("n", "<leader>gw", function()
-  require("telescope").extensions.git_worktree.git_worktrees()
+  local lines = vim.fn.systemlist("git worktree list")
+
+  if vim.v.shell_error ~= 0 or vim.tbl_isempty(lines) then
+    vim.notify("No worktrees found", vim.log.levels.WARN)
+    return
+  end
+
+  vim.ui.select(lines, {
+    prompt = "Worktrees",
+  }, function(choice)
+    if not choice then
+      return
+    end
+
+    local path = choice:match("^(%S+)")
+    if path then
+      Worktree.switch_worktree(path)
+    end
+  end)
 end, { desc = "Worktrees" })
 
 vim.keymap.set("n", "<leader>gW", function()
-  require("telescope").extensions.git_worktree.create_git_worktree()
+  vim.ui.input({
+    prompt = "Worktree path: ",
+  }, function(path)
+    if not path or path == "" then
+      return
+    end
+
+    vim.ui.input({
+      prompt = "Branch name: ",
+    }, function(branch)
+      if not branch or branch == "" then
+        return
+      end
+
+      Worktree.create_worktree(path, branch)
+    end)
+  end)
 end, { desc = "Create worktree" })

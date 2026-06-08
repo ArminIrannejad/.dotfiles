@@ -68,12 +68,6 @@ bindkey '^[[B' history-substring-search-down
 
 [ -f "$HOME/.zsh_profile" ] && source "$HOME/.zsh_profile"
 
-# Created by `pipx` on 2025-08-25 11:32:50
-export PATH="$PATH:/home/armino112/.local/bin"
-
-# opam configuration
-[[ ! -r /home/armino112/.opam/opam-init/init.zsh ]] || source /home/armino112/.opam/opam-init/init.zsh  > /dev/null 2> /dev/null
-
 [ -f "/home/armino112/.ghcup/env" ] && . "/home/armino112/.ghcup/env" # ghcup-env
 export PATH="$HOME/.local/bin:$HOME/.cabal/bin:$PATH"
 
