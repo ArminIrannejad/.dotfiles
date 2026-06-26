@@ -1,5 +1,5 @@
 vim.pack.add({
-  { src = 'https://github.com/nvim-lua/plenary.nvim', name = 'plenary.nvim' },
+  { src = 'https://github.com/nvim-lua/plenary.nvim',         name = 'plenary.nvim' },
 
   { src = 'https://github.com/NeogitOrg/neogit' },
   { src = 'https://github.com/sindrets/diffview.nvim' },
@@ -60,9 +60,12 @@ vim.keymap.set("n", "<leader>gdD", function()
   vim.cmd("DiffviewOpen HEAD -- " .. file)
 end, { desc = "Diff vs HEAD" })
 
+vim.keymap.set("n", "<leader>gdm", function()
+  vim.cmd("DiffviewOpen main...HEAD") -- ... for comparison with mergebase and not just latest main
+end, { desc = "Main vs HEAD" })
+
 vim.keymap.set("n", "<leader>gdc", function()
   local file = vim.fn.fnameescape(vim.fn.expand("%"))
-
   Snacks.picker.git_log({
     title = "Diff current file vs commit",
     layout = "vertical",
@@ -77,6 +80,25 @@ vim.keymap.set("n", "<leader>gdc", function()
     end,
   })
 end, { desc = "Diff vs chosen commit" })
+
+vim.keymap.set("n", "<leader>gdC", function()
+  Snacks.picker.git_log({
+    title = "Diff repo vs commit",
+    layout = "vertical",
+    confirm = function(picker, item)
+      picker:close()
+
+      local sha = item.commit or item.hash or item.text:match("^(%S+)")
+      if not sha then
+        vim.notify("Could not read commit SHA", vim.log.levels.WARN)
+        return
+      end
+
+      vim.cmd("DiffviewOpen " .. sha)
+    end,
+  })
+end, { desc = "Diff repo vs chosen commit" })
+
 require("git-worktree").setup({
   change_directory_command = "cd",
   update_on_change = true,

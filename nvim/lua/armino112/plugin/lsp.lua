@@ -6,12 +6,15 @@ vim.pack.add({
   { src = "https://github.com/Saghen/blink.cmp",                 version = vim.version.range("1.*") },
   { src = "https://github.com/L3MON4D3/LuaSnip" },
   { src = "https://github.com/rafamadriz/friendly-snippets" },
+  -- SQL table-name dictionary completion
+  { src = "https://github.com/Kaiser-Yang/blink-cmp-dictionary" },
+
   -- { src = "https://github.com/j-hui/fidget.nvim" },
 })
 
 require("conform").setup({
   formatters_by_ft = {
-    haskell = { "ormolu" },
+    -- haskell = { "ormolu" },
     json = { "prettier" },
     jsonc = { "prettier" },
     yaml = { "prettier" },
@@ -62,7 +65,26 @@ require("blink.cmp").setup({
     },
   },
 
-  sources = { default = { "lsp", "path", "buffer", "snippets", },
+  sources = {
+    default = { "lsp", "path", "buffer", "snippets" },
+
+    per_filetype = {
+      sql = { "lsp", "path", "buffer", "snippets", "dictionary" },
+    },
+
+    providers = {
+      dictionary = {
+        module = "blink-cmp-dictionary",
+        name = "DB Tables",
+        min_keyword_length = 1,
+        opts = {
+          dictionary_files = {
+            vim.fn.expand("~/.config/nvim/dictionary/databricks_tables.txt"),
+          },
+          force_fallback = true,
+        },
+      },
+    },
   },
 
   appearance = {
@@ -77,10 +99,13 @@ require("blink.cmp").setup({
 local capabilities = require("blink.cmp").get_lsp_capabilities()
 
 require("mason").setup()
+
 require("mason-lspconfig").setup({
   ensure_installed = {
     "lua_ls",
     "basedpyright",
+    "ruff",
+    "tflint",
   },
   automatic_enable = {
     exclude = {
@@ -100,6 +125,7 @@ vim.lsp.config("basedpyright", {
   capabilities = capabilities,
   settings = {
     python = {
+      pythonPath = vim.fn.getcwd() .. "/.venv/bin/python",
       analysis = {
         autoSearchPaths = true,
         useLibraryCodeForTypes = true,
@@ -136,6 +162,14 @@ vim.lsp.config("lua_ls", {
   },
 })
 
+vim.lsp.config("tflint", {
+  cmd = { "tflint", "--langserver" },
+  filetypes = { "terraform", "terraform-vars" },
+  root_markers = { ".terraform", ".git", "*.tfvars", ".tflint.hcl" },
+  capabilities = capabilities,
+})
+vim.lsp.enable("tflint")
+
 vim.diagnostic.config({
   virtual_text = false,
   virtual_lines = false,
@@ -155,7 +189,17 @@ vim.keymap.set("n", "<leader>q", vim.diagnostic.setloclist, {
   desc = "Diagnostics to loclist",
 })
 
+vim.api.nvim_create_autocmd("LspAttach", {
+  callback = function(event)
+    vim.keymap.set("n", "gd", vim.lsp.buf.definition, {
+      buf = event.buf,
+      desc = "Go to Def",
+    })
+  end,
+})
+
 local virtual_lines_enabled = false
+
 vim.keymap.set("n", "<leader>er", function()
   virtual_lines_enabled = not virtual_lines_enabled
   vim.diagnostic.config({
