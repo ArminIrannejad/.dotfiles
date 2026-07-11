@@ -1,0 +1,29 @@
+---
+- name: "{{ role_name }} | Ensure user bin exists"
+  ansible.builtin.file:
+    path: "{{ bin_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: "{{ role_name }} | Check installed"
+  ansible.builtin.command:
+    cmd: "{{ bin_dir }}/uv --version"
+  register: uv_installed
+  changed_when: false
+  failed_when: false
+
+- name: "{{ role_name }} | Download installer"
+  ansible.builtin.get_url:
+    url: https://astral.sh/uv/install.sh
+    dest: /tmp/uv-install.sh
+    mode: "0755"
+  when: uv_installed.rc != 0
+
+- name: "{{ role_name }} | Install"
+  ansible.builtin.command:
+    cmd: sh /tmp/uv-install.sh
+    creates: "{{ bin_dir }}/uv"
+  environment:
+    UV_INSTALL_DIR: "{{ bin_dir }}"
+    UV_NO_MODIFY_PATH: "1"
+  when: uv_installed.rc != 0

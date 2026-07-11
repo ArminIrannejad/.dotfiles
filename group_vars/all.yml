@@ -3,6 +3,7 @@ git_user_email: "armin.irannejad@gmail.com"
 
 default_roles:
   - system
+  - uv
   - git
   - starship
   - zsh
