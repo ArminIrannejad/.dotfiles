@@ -1,0 +1,38 @@
+---
+- name: "Starship | {{ ansible_facts['distribution'] }} | Check if starship is installed"
+  ansible.builtin.command:
+    cmd: starship --version
+  register: starship_installed
+  changed_when: false
+  failed_when: false
+
+- name: "Starship | {{ ansible_facts['distribution'] }} | Try system package"
+  ansible.builtin.dnf:
+    name: starship
+    state: present
+  become: true
+  register: starship_system_install
+  failed_when: false
+  when:
+    - starship_installed.rc != 0
+    - can_install_packages | default(false)
+
+- name: "Starship | {{ ansible_facts['distribution'] }} | Install Starship using official script"
+  ansible.builtin.shell:
+    cmd: curl -fsSL https://starship.rs/install.sh | sh -s -- --force
+  become: true
+  args:
+    creates: /usr/local/bin/starship
+  when:
+    - starship_installed.rc != 0
+    - can_install_packages | default(false)
+    - starship_system_install.rc | default(1) != 0
+
+- name: "Starship | {{ ansible_facts['distribution'] }} | Install Starship to user bin"
+  ansible.builtin.shell:
+    cmd: curl -fsSL https://starship.rs/install.sh | sh -s -- --bin-dir "{{ bin_dir }}" --force
+  args:
+    creates: "{{ bin_dir }}/starship"
+  when:
+    - starship_installed.rc != 0
+    - not (can_install_packages | default(false))

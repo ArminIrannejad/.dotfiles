@@ -1,0 +1,12 @@
+---
+- name: Detect WSL
+  ansible.builtin.set_fact:
+    ansible_host_environment_is_wsl: >-
+      {{
+        (ansible_facts.env.get('WSL_DISTRO_NAME', '') | length > 0)
+        or (ansible_facts.env.get('WSL_INTEROP', '') | length > 0)
+      }}
+
+- name: Show WSL State
+  ansible.builtin.debug:
+    msg: "WSL State: '{{ ansible_host_environment_is_wsl }}'"

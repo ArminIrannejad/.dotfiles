@@ -1,0 +1,15 @@
+---
+- name: "Git | {{ ansible_facts['distribution'] }} | Check if git is installed"
+  ansible.builtin.command: git --version
+  register: git_check
+  changed_when: false
+  failed_when: false
+
+- name: "Git | {{ ansible_facts['distribution'] }} | Install git"
+  ansible.builtin.dnf:
+    name: git
+    state: present
+  become: true
+  when:
+    - can_install_packages | default(false)
+    - git_check.rc != 0

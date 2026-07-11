@@ -1,0 +1,30 @@
+---
+- name: "System | {{ ansible_facts['distribution'] }} | Update package cache"
+  ansible.builtin.dnf:
+    update_cache: true
+  become: true
+  when:
+    - can_install_packages | default(false)
+    - system_update_packages | default(false)
+
+- name: "System | {{ ansible_facts['distribution'] }} | Install common packages"
+  ansible.builtin.dnf:
+    name: "{{ packages_common_fedora }}"
+    state: present
+  become: true
+  when: can_install_packages | default(false)
+
+- name: "System | {{ ansible_facts['distribution'] }} | Install optional packages"
+  ansible.builtin.dnf:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ packages_optional_fedora }}"
+  become: true
+  register: system_fedora_optional_packages
+  failed_when: false
+  when: can_install_packages | default(false)
+
+- name: "System | {{ ansible_facts['distribution'] }} | Package installation skipped"
+  ansible.builtin.debug:
+    msg: "Package installation skipped because sudo is unavailable. Run `sudo -v` and rerun dotfiles to install system packages."
+  when: not (can_install_packages | default(false))

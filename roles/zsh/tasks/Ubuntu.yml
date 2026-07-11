@@ -1,0 +1,19 @@
+---
+- name: "Zsh | {{ ansible_facts['distribution'] }} | Install zsh packages"
+  ansible.builtin.apt:
+    name:
+      - zsh
+      - git
+      - fzf
+    state: present
+  become: true
+  when: can_install_packages | default(false)
+
+- name: "Zsh | {{ ansible_facts['distribution'] }} | Set default shell"
+  ansible.builtin.user:
+    name: "{{ host_user }}"
+    shell: /usr/bin/zsh
+  become: true
+  when:
+    - zsh_default_shell | default(true)
+    - can_install_packages | default(false)

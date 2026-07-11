@@ -1,0 +1,67 @@
+---
+- name: "{{ role_name }} | Checking for distribution config: {{ ansible_facts['distribution'] }}"
+  ansible.builtin.stat:
+    path: "{{ role_path }}/tasks/{{ ansible_facts['distribution'] }}.yml"
+  register: zsh_distribution_config
+
+- name: "{{ role_name }} | Run tasks: {{ ansible_facts['distribution'] }}"
+  ansible.builtin.include_tasks: "{{ ansible_facts['distribution'] }}.yml"
+  when: zsh_distribution_config.stat.exists
+
+- name: "Zsh | Ensure config directories exist"
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - "{{ ansible_facts['user_dir'] }}/.config/zsh"
+    - "{{ ansible_facts['user_dir'] }}/.config/zsh/plugins"
+    - "{{ ansible_facts['user_dir'] }}/.cache/zsh"
+    - "{{ ansible_facts['user_dir'] }}/.local/state/zsh"
+
+- name: "Zsh | Copy .zshenv"
+  ansible.builtin.copy:
+    src: ".zshenv"
+    dest: "{{ ansible_facts['user_dir'] }}/.zshenv"
+    mode: "0644"
+
+- name: "Zsh | Copy .zshrc"
+  ansible.builtin.copy:
+    src: ".zshrc"
+    dest: "{{ ansible_facts['user_dir'] }}/.config/zsh/.zshrc"
+    mode: "0644"
+
+- name: "Zsh | Link .zshrc"
+  ansible.builtin.file:
+    src: "{{ ansible_facts['user_dir'] }}/.config/zsh/.zshrc"
+    dest: "{{ ansible_facts['user_dir'] }}/.zshrc"
+    state: link
+    force: true
+
+- name: "Zsh | Copy custom zsh config"
+  ansible.builtin.copy:
+    dest: "{{ ansible_facts['user_dir'] }}/.config/"
+    src: "zsh"
+    mode: "0644"
+    directory_mode: "0755"
+    force: true
+
+- name: "Zsh | Check for git"
+  ansible.builtin.command: git --version
+  register: zsh_git_check
+  changed_when: false
+  failed_when: false
+
+- name: "Zsh | Install plugins"
+  ansible.builtin.git:
+    repo: "https://github.com/{{ item.repo }}.git"
+    dest: "{{ ansible_facts['user_dir'] }}/.config/zsh/plugins/{{ item.name }}"
+    depth: 1
+    update: false
+  loop:
+    - { repo: "zdharma-continuum/fast-syntax-highlighting", name: "fast-syntax-highlighting" }
+    - { repo: "Aloxaf/fzf-tab", name: "fzf-tab" }
+    - { repo: "zsh-users/zsh-autosuggestions", name: "zsh-autosuggestions" }
+    - { repo: "zsh-users/zsh-history-substring-search", name: "zsh-history-substring-search" }
+    - { repo: "jeffreytse/zsh-vi-mode", name: "zsh-vi-mode" }
+  when: zsh_git_check.rc == 0

@@ -1,0 +1,29 @@
+---
+- name: "Neovim | {{ ansible_facts['distribution'] }} | Install dependencies"
+  ansible.builtin.dnf:
+    name:
+      - cmake
+      - curl
+      - gcc
+      - gcc-c++
+      - libtool
+      - make
+      - pkgconfig
+      - ripgrep
+      - tree-sitter-cli
+      - unzip
+    state: present
+  become: true
+  when: can_install_packages | default(false)
+
+- name: "Neovim | {{ ansible_facts['distribution'] }} | Install Neovim"
+  ansible.builtin.dnf:
+    name: neovim
+    state: present
+  become: true
+  when: can_install_packages | default(false)
+
+- name: "Neovim | {{ ansible_facts['distribution'] }} | Package installation skipped"
+  ansible.builtin.debug:
+    msg: "Neovim package installation skipped because sudo is unavailable."
+  when: not (can_install_packages | default(false))

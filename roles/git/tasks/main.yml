@@ -1,0 +1,79 @@
+---
+- name: "{{ role_name }} | Select distribution tasks: {{ ansible_facts['distribution'] }}"
+  ansible.builtin.set_fact:
+    git_distribution_tasks_file: >-
+      {{
+        'Ubuntu.yml'
+        if ansible_facts['distribution'] == 'Debian'
+        else ansible_facts['distribution'] ~ '.yml'
+      }}
+
+- name: "{{ role_name }} | Checking for distribution config: {{ ansible_facts['distribution'] }}"
+  ansible.builtin.stat:
+    path: "{{ role_path }}/tasks/{{ git_distribution_tasks_file }}"
+  register: git_distribution_config
+
+- name: "{{ role_name }} | Run tasks: {{ ansible_facts['distribution'] }}"
+  ansible.builtin.include_tasks: "{{ git_distribution_tasks_file }}"
+  when: git_distribution_config.stat.exists
+
+- name: "Git | Ensure config directory exists"
+  ansible.builtin.file:
+    path: "{{ ansible_facts['user_dir'] }}/.config/git"
+    state: directory
+    mode: "0755"
+
+- name: "Git | Configure global settings"
+  community.general.git_config:
+    name: "{{ item.name }}"
+    scope: global
+    value: "{{ item.value }}"
+  loop:
+    - { name: color.ui, value: auto }
+    - { name: core.editor, value: nvim }
+    - { name: diff.colorMoved, value: zebra }
+    - { name: fetch.prune, value: "true" }
+    - { name: init.defaultBranch, value: main }
+    - { name: pull.ff, value: only }
+    - { name: pull.rebase, value: "true" }
+    - { name: push.autoSetupRemote, value: "true" }
+    - { name: rebase.autoStash, value: "true" }
+    - { name: rerere.enabled, value: "true" }
+
+- name: "Git | Set user.email"
+  community.general.git_config:
+    name: user.email
+    scope: global
+    value: "{{ git_user_email }}"
+  when: git_user_email | default('') | length > 0
+
+- name: "Git | Set user.name"
+  community.general.git_config:
+    name: user.name
+    scope: global
+    value: "{{ git_user_name }}"
+  when: git_user_name | default('') | length > 0
+
+- name: "Git | Set undo alias"
+  community.general.git_config:
+    name: alias.undo
+    scope: global
+    value: "reset HEAD~1 --mixed"
+
+- name: "Git | Set br alias"
+  community.general.git_config:
+    name: alias.br
+    scope: global
+    value: "branch --format='%(HEAD) %(color:yellow)%(refname:short)%(color:reset) - %(contents:subject) %(color:green)(%(committerdate:relative)) [%(authorname)]' --sort=-committerdate"
+
+- name: "Git | Copy commit template"
+  ansible.builtin.copy:
+    src: global.commit.template
+    dest: "{{ ansible_facts['user_dir'] }}/.config/git/commit_template"
+    mode: "0644"
+
+- name: "Git | Set commit.template"
+  community.general.git_config:
+    name: commit.template
+    scope: global
+    value: "{{ ansible_facts['user_dir'] }}/.config/git/commit_template"

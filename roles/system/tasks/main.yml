@@ -1,0 +1,20 @@
+---
+- name: "System | Ensure user directories exist"
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - "{{ config_dir }}"
+    - "{{ bin_dir }}"
+    - "{{ ansible_facts['env']['HOME'] }}/.local/state/zsh"
+    - "{{ ansible_facts['env']['HOME'] }}/.cache/zsh"
+
+- name: "{{ role_name }} | Checking for distribution config: {{ ansible_facts['distribution'] }}"
+  ansible.builtin.stat:
+    path: "{{ role_path }}/tasks/{{ ansible_facts['distribution'] }}.yml"
+  register: system_distribution_config
+
+- name: "{{ role_name }} | Run tasks: {{ ansible_facts['distribution'] }}"
+  ansible.builtin.include_tasks: "{{ ansible_facts['distribution'] }}.yml"
+  when: system_distribution_config.stat.exists

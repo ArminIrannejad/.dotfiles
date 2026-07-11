@@ -1,0 +1,52 @@
+---
+- name: "System | {{ ansible_facts['distribution'] }} | Update package cache"
+  ansible.builtin.apt:
+    update_cache: true
+  become: true
+  when: can_install_packages | default(false)
+
+- name: "System | {{ ansible_facts['distribution'] }} | Install common packages"
+  ansible.builtin.apt:
+    name: "{{ packages_common_ubuntu }}"
+    state: present
+  become: true
+  when: can_install_packages | default(false)
+
+- name: "System | {{ ansible_facts['distribution'] }} | Install optional packages"
+  ansible.builtin.apt:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ packages_optional_ubuntu }}"
+  become: true
+  register: system_ubuntu_optional_packages
+  failed_when: false
+  when: can_install_packages | default(false)
+
+- name: "System | {{ ansible_facts['distribution'] }} | Package installation skipped"
+  ansible.builtin.debug:
+    msg: "Package installation skipped because sudo is unavailable. Run `sudo -v` and rerun dotfiles to install system packages."
+  when: not (can_install_packages | default(false))
+
+- name: "System | {{ ansible_facts['distribution'] }} | Detect fdfind"
+  ansible.builtin.stat:
+    path: /usr/bin/fdfind
+  register: system_fdfind
+
+- name: "System | {{ ansible_facts['distribution'] }} | Link fd"
+  ansible.builtin.file:
+    src: /usr/bin/fdfind
+    dest: "{{ bin_dir }}/fd"
+    state: link
+  when: system_fdfind.stat.exists
+
+- name: "System | {{ ansible_facts['distribution'] }} | Detect batcat"
+  ansible.builtin.stat:
+    path: /usr/bin/batcat
+  register: system_batcat
+
+- name: "System | {{ ansible_facts['distribution'] }} | Link bat"
+  ansible.builtin.file:
+    src: /usr/bin/batcat
+    dest: "{{ bin_dir }}/bat"
+    state: link
+  when: system_batcat.stat.exists
