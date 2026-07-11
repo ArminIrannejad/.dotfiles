@@ -1,15 +1,4 @@
-return {
-  {
-    'mrcjkb/haskell-tools.nvim',
-    version = '^6',
-    lazy = false,
-  },
-  { "neovimhaskell/haskell-vim", ft = "haskell" },
-  {
-    "luc-tielen/telescope_hoogle",
-    dependencies = { "nvim-telescope/telescope.nvim" },
-    config = function()
-      require("telescope").load_extension("hoogle")
-    end
-  },
-}
+vim.pack.add({
+  { src = 'https://github.com/mrcjkb/haskell-tools.nvim', version = "v10.0.0" },
+  { src = 'https://github.com/neovimhaskell/haskell-vim' },
+})

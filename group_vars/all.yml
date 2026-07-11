@@ -1,14 +1,32 @@
-dotfiles_repo: "{{ ansible_env.HOME }}/.dotfiles"
-
 git_user_name: "ArminIrannejad"
 git_user_email: "armin.irannejad@gmail.com"
 
-packages_common:
-  # - ansible
+default_roles:
+  - system
+  - git
+  - starship
+  - zsh
+  - tmux
+  - neovim
+
+exclude_roles: []
+exclude_roles_by_distribution: {}
+
+system_update_packages: false
+zsh_default_shell: true
+neovim_enabled: true
+starship_enabled: true
+
+config_dir: "{{ ansible_facts['env']['HOME'] }}/.config"
+bin_dir: "{{ ansible_facts['env']['HOME'] }}/.local/bin"
+
+packages_common_ubuntu:
   - git
   - zsh
   - ripgrep
   - fzf
+  - fd-find
+  - bat
   - curl
   - wget
   - neovim
@@ -18,11 +36,36 @@ packages_common:
   - unzip
   - btop
   - build-essential
-  - tmux
   - tree
+  - python3
+  - python3-pip
 
-zsh_default_shell: true
-neovim_enabled: true
-starship_enabled: true
-config_dir: "{{ ansible_env.HOME }}/.config"
-bin_dir: "{{ ansible_env.HOME }}/bin"
+packages_optional_ubuntu:
+  - zoxide
+  - eza
+
+packages_common_fedora:
+  - git
+  - zsh
+  - ripgrep
+  - fzf
+  - fd-find
+  - zoxide
+  - bat
+  - curl
+  - wget
+  - neovim
+  - npm
+  - nodejs
+  - tmux
+  - unzip
+  - btop
+  - gcc
+  - gcc-c++
+  - make
+  - tree
+  - python3
+  - python3-pip
+
+packages_optional_fedora:
+  - eza

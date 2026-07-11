@@ -1,6 +1,6 @@
+# zmodload zsh/zprof
 export PATH="$HOME/bin:$HOME/.local/bin:/usr/local/bin:$PATH"
-HISTFILE=$HOME/.zsh_history
-
+HISTFILE="$XDG_STATE_HOME/zsh/history"
 HISTSIZE=100000
 SAVEHIST=100000
 
@@ -8,81 +8,58 @@ setopt APPEND_HISTORY
 setopt INC_APPEND_HISTORY
 setopt SHARE_HISTORY
 
-setopt HIST_IGNORE_DUPS     
-setopt HIST_IGNORE_ALL_DUPS  
-setopt HIST_FIND_NO_DUPS  
-setopt HIST_IGNORE_SPACE   
-setopt HIST_REDUCE_BLANKS   
+setopt HIST_IGNORE_DUPS
+setopt HIST_IGNORE_ALL_DUPS
+setopt HIST_FIND_NO_DUPS
+setopt HIST_IGNORE_SPACE
+setopt HIST_REDUCE_BLANKS
 setopt EXTENDED_HISTORY
 
+setopt AUTOCD
+setopt NOBEEP
+setopt NUMERIC_GLOB_SORT
 
-
-ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=8'
-ZSH_AUTOSUGGEST_USE_ASYNC=1
-ZVM_CURSOR_STYLE_ENABLED=false
-
-function zvm_after_init() {
-  bindkey -M viins -s '^F' "tmux-sessionizer\n"
-  bindkey -M vicmd -s '^F' "tmux-sessionizer\n"
-}
-
-ZSH_PLUGIN_DIR="$HOME/.zsh/plugins"
-
-if [ -f "$ZSH_PLUGIN_DIR/zsh-autosuggestions/zsh-autosuggestions.zsh" ]; then
-  source "$ZSH_PLUGIN_DIR/zsh-autosuggestions/zsh-autosuggestions.zsh"
+if command -v zoxide >/dev/null 2>&1; then
+  eval "$(zoxide init zsh)"
 fi
 
-if [ -f "$ZSH_PLUGIN_DIR/zsh-history-substring-search/zsh-history-substring-search.zsh" ]; then
-  source "$ZSH_PLUGIN_DIR/zsh-history-substring-search/zsh-history-substring-search.zsh"
+autoload -Uz compinit
+
+zcompdump="${XDG_CACHE_HOME:-$HOME/.cache}/zsh/zcompdump"
+mkdir -p "${zcompdump:h}"
+
+if [[ -z "$_COMPINIT_DONE" ]]; then # to avoid multiple calls, 186ms -> 54ms
+  typeset -g _COMPINIT_DONE=1
+
+  if [[ -f "$zcompdump" ]]; then
+    compinit -C -d "$zcompdump"
+  else
+    compinit -d "$zcompdump"
+  fi
 fi
 
-source /usr/share/doc/fzf/examples/key-bindings.zsh
-source /usr/share/doc/fzf/examples/completion.zsh
+zstyle ':completion:*' menu select
+zstyle ':completion:*' matcher-list 'm:{a-z}={A-Za-z}'
 
+for fzf_bindings in \
+  /usr/share/fzf/shell/key-bindings.zsh \
+  /usr/share/doc/fzf/examples/key-bindings.zsh; do
+  [[ -f "$fzf_bindings" ]] && source "$fzf_bindings" && break
+done
 
-bindkey -M viins '^[[A' history-substring-search-up
-bindkey -M viins '^[[B' history-substring-search-down
-bindkey '^[[A' history-substring-search-up
-bindkey '^[[B' history-substring-search-down
+for fzf_completion in \
+  /usr/share/fzf/shell/completion.zsh \
+  /usr/share/doc/fzf/examples/completion.zsh; do
+  [[ -f "$fzf_completion" ]] && source "$fzf_completion" && break
+done
 
+for zsh_config in fzf aliases bindings plugins prompt; do
+  [[ -f "$ZDOTDIR/${zsh_config}.zsh" ]] && source "$ZDOTDIR/${zsh_config}.zsh"
+done
 
-if [ -f "$ZSH_PLUGIN_DIR/zsh-vi-mode/zsh-vi-mode.plugin.zsh" ]; then
-  source "$ZSH_PLUGIN_DIR/zsh-vi-mode/zsh-vi-mode.plugin.zsh"
-fi
+[ -f "$HOME/.ghcup/env" ] && . "$HOME/.ghcup/env"
+export PATH="$HOME/.cargo/bin:$PATH"
 
-if [ -f "$ZSH_PLUGIN_DIR/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" ]; then
-  source "$ZSH_PLUGIN_DIR/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
-fi
-
-[ -f "$HOME/.zprofile" ] && source "$HOME/.zprofile"
-
-export CONDA_CHANGEPS1=false
-
-# >>> conda initialize >>>
-# !! Contents within this block are managed by 'conda init' !!
-__conda_setup="$('/home/armino112/anaconda3/bin/conda' 'shell.zsh' 'hook' 2> /dev/null)"
-if [ $? -eq 0 ]; then
-    eval "$__conda_setup"
-else
-    if [ -f "/home/armino112/anaconda3/etc/profile.d/conda.sh" ]; then
-        . "/home/armino112/anaconda3/etc/profile.d/conda.sh"
-    else
-        export PATH="/home/armino112/anaconda3/bin:$PATH"
-    fi
-fi
-unset __conda_setup
-# <<< conda initialize <<<
-# Created by `pipx` on 2025-08-25 11:32:50
-export PATH="$PATH:/home/armino112/.local/bin"
-
-# opam configuration
-[[ ! -r /home/armino112/.opam/opam-init/init.zsh ]] || source /home/armino112/.opam/opam-init/init.zsh  > /dev/null 2> /dev/null
-
-[ -f "/home/armino112/.ghcup/env" ] && . "/home/armino112/.ghcup/env" # ghcup-env
-export PATH="$HOME/.local/bin:$HOME/.cabal/bin:$PATH"
-
-type starship_zle-keymap-select >/dev/null || \
-  {
-    eval "$(/usr/local/bin/starship init zsh)"
-  }
-
+#THIS MUST BE AT THE END OF THE FILE FOR SDKMAN TO WORK!!!
+export SDKMAN_DIR="$HOME/.sdkman"
+[[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"

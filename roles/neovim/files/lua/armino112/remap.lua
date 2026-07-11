@@ -1,8 +1,13 @@
 vim.g.mapleader = " "
+vim.keymap.set("v", "J", ":m '>+1<CR>gv=gv")
 vim.keymap.set("v", "K", ":m '<-2<CR>gv=gv")
 
+vim.keymap.set("n", "=ap", "ma=ap'a")
+vim.keymap.set("n", "J", "mzJ`z")
 vim.keymap.set("n", "<C-d>", "<C-d>zz")
 vim.keymap.set("n", "<C-u>", "<C-u>zz")
+vim.keymap.set("n", "{", "{zz")
+vim.keymap.set("n", "}", "}zz")
 
 vim.keymap.set("n", "n", "nzzzv")
 vim.keymap.set("n", "N", "Nzzzv")
@@ -13,11 +18,19 @@ vim.keymap.set("n", "<leader>Y", [["+Y]])
 
 vim.keymap.set({ "n", "v" }, "<leader>d", [["_d]])
 
+-- for _, chars in ipairs({"-", "_",}) do
+--   vim.keymap.set("n", "ci"..chars, "T"..chars.."ct"..chars) -- TODO: default behaviour of mini.ai maybe migrate?
+--   vim.keymap.set("n", "ca"..chars, "F"..chars.."cf"..chars)
+-- end
+
+-- vim.keymap.set("n", "ci_" , "T_ct_")
+-- vim.keymap.set("n", "ci-" , "T-ct-")
+
 vim.keymap.set("i", "<C-c>", "<Esc>")
 
 vim.keymap.set("n", "<C-f>", "<cmd>silent !tmux neww tmux-sessionizer<CR>")
-vim.keymap.set("n", "<leader>fo", function()
-  require("conform").format({ async = true, lsp_fallback = true })
+vim.keymap.set({ "n", "v" }, "<leader>fo", function()
+  require("conform").format({ async = true, lsp_format = "fallback", })
 end, { desc = "Format file" })
 
 -- reselect indented area

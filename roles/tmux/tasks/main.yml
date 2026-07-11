@@ -8,13 +8,21 @@
   ansible.builtin.include_tasks: "{{ ansible_facts['distribution'] }}.yml"
   when: tmux_distribution_config.stat.exists
 
+- name: "Tmux | Ensure bin directory exists"
+  ansible.builtin.file:
+    path: "{{ bin_dir }}"
+    state: directory
+    mode: "0755"
+
 - name: "Tmux | Configure tmux"
   ansible.builtin.copy:
-    src: tmux
-    dest: "{{ ansible_facts['user_dir'] }}/.config/"
+    src: ".tmux.conf"
+    dest: "{{ ansible_facts['user_dir'] }}/.tmux.conf"
     mode: "0644"
-    directory_mode: "0755"
     force: true
 
-
-# TODO: add tmux-sessionizer
+- name: "Tmux | Install tmux-sessionizer"
+  ansible.builtin.copy:
+    src: tmux-sessionizer
+    dest: "{{ bin_dir }}/tmux-sessionizer"
+    mode: "0755"

@@ -1,147 +1,204 @@
-return {
-  "neovim/nvim-lspconfig",
-  dependencies = {
-    "stevearc/conform.nvim",
-    "williamboman/mason.nvim",
-    "williamboman/mason-lspconfig.nvim",
-    "hrsh7th/cmp-nvim-lsp",
-    "hrsh7th/cmp-buffer",
-    "hrsh7th/cmp-path",
-    "hrsh7th/cmp-cmdline",
-    "hrsh7th/nvim-cmp",
-    "L3MON4D3/LuaSnip",
-    "saadparwaiz1/cmp_luasnip",
-    --"j-hui/fidget.nvim",
+vim.pack.add({
+  { src = "https://github.com/neovim/nvim-lspconfig" },
+  { src = "https://github.com/stevearc/conform.nvim" },
+  { src = "https://github.com/williamboman/mason.nvim" },
+  { src = "https://github.com/williamboman/mason-lspconfig.nvim" },
+  { src = "https://github.com/Saghen/blink.cmp",                 version = vim.version.range("1.*") },
+  { src = "https://github.com/L3MON4D3/LuaSnip" },
+  { src = "https://github.com/rafamadriz/friendly-snippets" },
+  -- SQL table-name dictionary completion
+  { src = "https://github.com/Kaiser-Yang/blink-cmp-dictionary" },
+
+  -- { src = "https://github.com/j-hui/fidget.nvim" },
+})
+
+require("conform").setup({
+  formatters_by_ft = {
+    -- haskell = { "ormolu" },
+    json = { "prettier" },
+    jsonc = { "prettier" },
+    yaml = { "prettier" },
+  },
+})
+
+require("blink.cmp").setup({
+  fuzzy = {
+    implementation = "prefer_rust",
   },
 
-  config = function()
-    require("conform").setup({
-      formatters_by_ft = {
-        json = { "prettier", stop_on_first = true, name = "dprint" },
-        jsonc = { "prettier", stop_on_first = true, name = "dprint" },
-        haskell = { "ormolu" },
-        marksdown = {"marksman"},
-      }
-    })
-
-    local cmp          = require("cmp")
-    local cmp_lsp      = require("cmp_nvim_lsp")
-    local capabilities = vim.tbl_deep_extend(
-      "force", {},
-      vim.lsp.protocol.make_client_capabilities(),
-      cmp_lsp.default_capabilities()
-    )
-    vim.lsp.config("ocamllsp", {
-      cmd = { "ocamllsp" }, -- found via PATH from opam I hope
-      capabilities = capabilities,
-    })
-    vim.lsp.enable("ocamllsp")
-
-    --require("fidget").setup({})
-    require("mason").setup()
-    require("mason-lspconfig").setup({
-      ensure_installed = { "lua_ls", "pyright" },
-      automatic_enable = {
-        exclude = {"hls"}, -- haskell-tools will start hls
-      }
-    })
-
-    vim.lsp.config("pyright", {
-      capabilities = capabilities,
-      settings = {
-        python = {
-          analysis = {
-            autoSearchPaths        = true,
-            useLibraryCodeForTypes = true,
-            diagnosticMode         = "workspace",
-            completeFunctionCalls  = true,
-          },
+  completion = {
+    menu = {
+      auto_show = true,
+      draw = {
+        columns = {
+          { "label",     "label_description", gap = 2 },
+          { "kind_icon", "kind",              gap = 1 },
         },
       },
-    })
-    vim.lsp.enable("pyright")
+    },
 
-    vim.lsp.config("lua_ls", {
-      capabilities = capabilities,
-      settings = {
-        Lua = {
-          runtime = {
-            version = "LuaJIT",
-            path    = vim.split(package.path, ";"),
-          },
-          diagnostics = {
-            globals = { "vim" },
-          },
-          workspace = {
-            library         = vim.api.nvim_get_runtime_file("", true),
-            checkThirdParty = false,
-          },
-          telemetry = { enable = false },
+    documentation = {
+      auto_show = true,
+    },
+
+    ghost_text = {
+      enabled = false,
+      show_with_menu = false,
+    },
+
+    accept = {
+      auto_brackets = {
+        enabled = true,
+      },
+    },
+  },
+
+  cmdline = {
+    enabled = true,
+    keymap = {
+      preset = "cmdline",
+    },
+    completion = {
+      menu = {
+        auto_show = false,
+      },
+    },
+  },
+
+  sources = {
+    default = { "lsp", "path", "buffer", "snippets" },
+
+    per_filetype = {
+      sql = { "lsp", "path", "buffer", "snippets", "dictionary" },
+    },
+
+    providers = {
+      dictionary = {
+        module = "blink-cmp-dictionary",
+        name = "DB Tables",
+        min_keyword_length = 1,
+        opts = {
+          dictionary_files = vim.tbl_filter(function(path)
+            return vim.fn.filereadable(path) == 1
+          end, {
+            vim.fn.expand("~/.config/nvim/dictionary/databricks_tables.txt"),
+            vim.fn.stdpath("state") .. "/dictionary/databricks_tables.txt",
+          }),
+          force_fallback = true,
         },
       },
-    })
-    vim.lsp.enable("lua_ls")
+    },
+  },
 
-    local cmp_select = { behavior = cmp.SelectBehavior.Select }
-    cmp.setup({
-      snippet = {
-        expand = function(args)
-          require("luasnip").lsp_expand(args.body)
-        end,
+  appearance = {
+    nerd_font_variant = "mono",
+  },
+
+  signature = {
+    enabled = true,
+  },
+})
+
+local capabilities = require("blink.cmp").get_lsp_capabilities()
+
+require("mason").setup()
+
+require("mason-lspconfig").setup({
+  ensure_installed = {
+    "lua_ls",
+    "basedpyright",
+    "ruff",
+    "tflint",
+  },
+  automatic_enable = {
+    exclude = {
+      "hls",
+    },
+  },
+})
+
+vim.lsp.config("ocamllsp", {
+  cmd = { "ocamllsp" },
+  capabilities = capabilities,
+})
+
+vim.lsp.enable("ocamllsp")
+
+vim.lsp.config("basedpyright", {
+  capabilities = capabilities,
+  settings = {
+    python = {
+      pythonPath = vim.fn.getcwd() .. "/.venv/bin/python",
+      analysis = {
+        autoSearchPaths = true,
+        useLibraryCodeForTypes = true,
+        diagnosticMode = "workspace",
+        completeFunctionCalls = true,
       },
-      mapping = cmp.mapping.preset.insert({
-        ["<C-p>"]     = cmp.mapping.select_prev_item(cmp_select),
-        ["<C-n>"]     = cmp.mapping.select_next_item(cmp_select),
-        ["<C-y>"]     = cmp.mapping.confirm({ select = true }),
-        ["<C-Space>"] = cmp.mapping.complete(),
-      }),
-      sources = cmp.config.sources(
-        { { name = "nvim_lsp" }, { name = "luasnip" } },
-        { { name = "buffer" } }
-      ),
-    })
+    },
+  },
+})
 
-    vim.diagnostic.config({
-      virtual_text     = false,
-      signs            = true,
-      underline        = true,
-      update_in_insert = false,
-      float            = {
-        focusable = true,
-        border    = "rounded",
-        header    = "",
-        prefix    = "",
+vim.lsp.config("lua_ls", {
+  capabilities = capabilities,
+
+  settings = {
+    Lua = {
+      runtime = {
+        version = "LuaJIT",
+        path = vim.split(package.path, ";"),
       },
-    })
 
-    vim.keymap.set("n", "<leader>er", vim.diagnostic.open_float, { desc = "Show diagnostic" })
-    vim.keymap.set("n", "<leader>q", vim.diagnostic.setloclist, { desc = "Diagnostics to loclist" })
+      diagnostics = {
+        globals = { "vim" },
+      },
 
-    vim.api.nvim_create_autocmd("LspAttach", {
-      callback = function(ev)
-        local opts = { buffer = ev.buf, silent = true }
-        vim.keymap.set("n", "gd", vim.lsp.buf.definition, opts)
-        vim.keymap.set("n", "gD", vim.lsp.buf.declaration, opts)
-      end,
-    })
+      workspace = {
+        library = vim.api.nvim_get_runtime_file("", true),
+        checkThirdParty = false,
+      },
 
-    local auto_float = false
-    local function toggle_auto_float()
-      auto_float = not auto_float
-      if auto_float then
-        vim.api.nvim_create_augroup("AutoDiagnosticFloat", { clear = true })
-        vim.api.nvim_create_autocmd("CursorHold", {
-          group = "AutoDiagnosticFloat",
-          callback = function()
-            vim.diagnostic.open_float(nil, { focusable = false })
-          end,
-        })
-        print("Auto diagnostic float: ON")
-      else
-        vim.api.nvim_clear_autocmds({ group = "AutoDiagnosticFloat" })
-        print("Auto diagnostic float: OFF")
-      end
-    end
-    vim.keymap.set("n", "<leader>tf", toggle_auto_float, { desc = "Toggle auto-diagnostic float" })
-  end,
-}
+      telemetry = {
+        enable = false,
+      },
+    },
+  },
+})
+
+vim.lsp.config("tflint", {
+  cmd = { "tflint", "--langserver" },
+  filetypes = { "terraform", "terraform-vars" },
+  root_markers = { ".terraform", ".git", "*.tfvars", ".tflint.hcl" },
+  capabilities = capabilities,
+})
+vim.lsp.enable("tflint")
+
+vim.diagnostic.config({
+  virtual_text = false,
+  virtual_lines = false,
+  signs = true,
+  underline = true,
+  update_in_insert = false,
+
+  float = {
+    focusable = true,
+    border = "rounded",
+    header = "",
+    prefix = "",
+  },
+})
+
+vim.keymap.set("n", "<leader>q", vim.diagnostic.setloclist, {
+  desc = "Diagnostics to loclist",
+})
+
+local virtual_lines_enabled = false
+
+vim.keymap.set("n", "<leader>er", function()
+  virtual_lines_enabled = not virtual_lines_enabled
+  vim.diagnostic.config({
+    virtual_lines = virtual_lines_enabled,
+  })
+end, {
+  desc = "Toggle diagnostic virtual lines",
+})

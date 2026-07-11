@@ -1,7 +1,7 @@
 #!/bin/bash
 
-shellcheck shell=bash
-shellcheck disable=SC2034  # Unused variables are exported for child scripts
+# shellcheck shell=bash
+# shellcheck disable=SC2034  # Unused variables are exported for child scripts
 
 # Catppuccin Mocha color codes
 NC='\033[0m'
@@ -78,7 +78,7 @@ if ! command -v tput &> /dev/null; then
   exit 1
 fi
 
-# Early check for help/version flags (before setup)
+# Early check for help/version/debug flags (before setup)
 for arg in "$@"; do
   case $arg in
     -h|--help)
@@ -87,6 +87,9 @@ for arg in "$@"; do
     --version)
       SHOW_VERSION=true
       ;;
+    --detect-os)
+      SHOW_DETECTED_OS=true
+      ;;
   esac
 done
 
@@ -94,22 +97,20 @@ done
 cleanup() {
   # Kill spinner if running
   if [[ $SPINNER_PID != "" ]]; then
-    kill $SPINNER_PID 2>/dev/null
-    wait $SPINNER_PID 2>/dev/null
+    kill $SPINNER_PID 2>/dev/null || true
+    wait $SPINNER_PID 2>/dev/null || true
   fi
   # Show cursor
-  tput cnorm
+  tput cnorm 2>/dev/null || true
 }
 
 # Set trap to cleanup on exit
 trap cleanup EXIT INT TERM
 
 # Paths
-VAULT_SECRET_FILE="$HOME/.ansible-vault/vault.secret"
-OP_INSTALLED=false
-OP_AUTHENTICATED=false
 DOTFILES_LOG="$HOME/.dotfiles.log"
 DOTFILES_DIR="$HOME/.dotfiles"
+DOTFILES_BRANCH="${DOTFILES_BRANCH:-feature/ansible-dotfiles}"
 IS_FIRST_RUN="$HOME/.dotfiles_run"
 DOTFILES_VERSION="1.0.0"
 # Spinner PID tracking
@@ -125,6 +126,7 @@ show_help() {
   echo -e "${CAT_BLUE}OPTIONS:${NC}"
   echo -e "    ${CAT_GREEN}-h, --help${NC}              Show this help message"
   echo -e "    ${CAT_GREEN}--version${NC}               Show version information"
+  echo -e "    ${CAT_GREEN}--detect-os${NC}             Print normalized OS identifier and exit"
   echo -e "    ${CAT_GREEN}--uninstall <role>${NC}      Uninstall a role (cleanup only)"
   echo -e "    ${CAT_GREEN}--delete <role>${NC}         Uninstall and delete a role from dotfiles"
   echo -e "    ${CAT_GREEN}-v, -vv, -vvv${NC}           Verbose mode (passed to ansible-playbook)"
@@ -168,16 +170,16 @@ _spinner() {
   local delay=0.08
 
   # Hide cursor
-  tput civis
+  tput civis 2>/dev/null || true
 
   # Save cursor position
-  tput sc
+  tput sc 2>/dev/null || true
 
   while true; do
     for char in "${chars[@]}"; do
       # Restore cursor position and clear line
-      tput rc
-      tput el
+      tput rc 2>/dev/null || true
+      tput el 2>/dev/null || true
       printf "${CAT_OVERLAY1} [${CAT_SAPPHIRE}${char}${CAT_OVERLAY1}]  ${CAT_TEXT}${task_text}" >&2
       sleep $delay
     done
@@ -199,7 +201,7 @@ __task() {
   SPINNER_PID=$!
 
   # Disable job control messages
-  disown $SPINNER_PID 2>/dev/null
+  disown $SPINNER_PID 2>/dev/null || true
 }
 
 # _cmd performs commands with error checking
@@ -217,13 +219,13 @@ _cmd() {
   else
     # Kill spinner if running
     if [[ $SPINNER_PID != "" ]]; then
-      kill $SPINNER_PID 2>/dev/null
-      wait $SPINNER_PID 2>/dev/null
+      kill $SPINNER_PID 2>/dev/null || true
+      wait $SPINNER_PID 2>/dev/null || true
       SPINNER_PID=""
     fi
 
     # Show cursor again
-    tput cnorm
+    tput cnorm 2>/dev/null || true
 
     # Clear the line and show error
     printf "\r\033[K${CAT_RED} [✗]  ${CAT_TEXT}${TASK}${NC}\n"
@@ -249,13 +251,13 @@ _clear_task() {
 _task_done() {
   # Kill spinner if running
   if [[ $SPINNER_PID != "" ]]; then
-    kill $SPINNER_PID 2>/dev/null
-    wait $SPINNER_PID 2>/dev/null
+    kill $SPINNER_PID 2>/dev/null || true
+    wait $SPINNER_PID 2>/dev/null || true
     SPINNER_PID=""
   fi
 
   # Show cursor again
-  tput cnorm
+  tput cnorm 2>/dev/null || true
 
   # Clear line and show success
   printf "\r\033[K${CAT_GREEN} [✓]  ${CAT_TEXT}${TASK}\n"
@@ -362,49 +364,67 @@ macos_setup() {
     __task "Installing Ansible"
     _cmd "brew install ansible"
   fi
-  if ! [ -x "$(command -v op)" ]; then
-    __task "Installing 1Password CLI"
-    _cmd "brew install 1password@beta"
-    _cmd "brew install 1password-cli@beta"
-    __task "Setting up 1Password CLI"
-    # press any key to continue
-    read -n 1 -s -r -p "Press any key to continue"
-    _task_done
-  fi
 }
 
 update_ansible_galaxy() {
   local os=$1
-  local os_requirements=""
-  __task "Installing Ansible dependencies (This may take a few minutes)"
-  if [ -f "$DOTFILES_DIR/requirements/$os.yml" ]; then
-    __task "Installing Ansible dependencies for $os"
-    os_requirements="$DOTFILES_DIR/requirements/$os.yml"
-  fi
-  _cmd "ansible-galaxy install -r $DOTFILES_DIR/requirements/common.yml $os_requirements"
-}
+  local requirements_file
+  local requirement_files=("$DOTFILES_DIR/requirements/common.yml")
 
-confirmVaultAccess() {
-  __task "Checking for 1Password CLI"
-  if ! command -v op >/dev/null 2>&1; then
-    printf "${OVERWRITE}${CAT_RED} [X]  ${CAT_TEXT}Checking for 1Password CLI\n"
-    printf " ${WARNING}${CAT_MAROON}   1Password CLI is not installed.${NC}\n"
-    exit 1
+  if [ -f "$DOTFILES_DIR/requirements/$os.yml" ]; then
+    requirement_files+=("$DOTFILES_DIR/requirements/$os.yml")
   fi
-  local op_version
-  op_version=$(op --version)
-  __task "1Password CLI found: [$op_version] -- Authenticating..."
-  if ! _cmd "op --account my.1password.com vault list"; then exit 1; fi
-  _task_done && printf "${CAT_GREEN} [✓] ${CAT_TEXT}Successfully authenticated with 1Password CLI! ☕\n"
-  return
+
+  for requirements_file in "${requirement_files[@]}"; do
+    if [ -f "$requirements_file" ]; then
+      __task "Installing Ansible dependencies from ${requirements_file#$DOTFILES_DIR/}"
+      _cmd "ansible-galaxy collection install -r \"$requirements_file\""
+    fi
+  done
 }
 
 detect_os() {
-  if [ -f /etc/os-release ]; then
-    source /etc/os-release
-    echo $ID
+  local os_release_file="${DOTFILES_OS_RELEASE:-/etc/os-release}"
+
+  if [ -f "$os_release_file" ]; then
+    local ID=""
+    local ID_LIKE=""
+    local id_lower=""
+    local id_like_lower=""
+    # shellcheck source=/dev/null
+    source "$os_release_file"
+
+    id_lower=$(printf '%s' "$ID" | tr '[:upper:]' '[:lower:]')
+    id_like_lower=$(printf '%s' "$ID_LIKE" | tr '[:upper:]' '[:lower:]')
+
+    case "$id_lower" in
+      ubuntu|fedora)
+        echo "$id_lower"
+        return
+        ;;
+      arch|archlinux|cachyos)
+        echo "arch"
+        return
+        ;;
+    esac
+
+    case " $id_like_lower " in
+      *" arch "*)
+        echo "arch"
+        return
+        ;;
+    esac
+
+    echo "$id_lower"
   else
-    echo $(uname -s | tr '[:upper:]' '[:lower:]')
+    case "$(uname -s | tr '[:upper:]' '[:lower:]')" in
+      darwin)
+        echo "darwin"
+        ;;
+      *)
+        uname -s | tr '[:upper:]' '[:lower:]'
+        ;;
+    esac
   fi
 }
                                                              
@@ -425,7 +445,7 @@ print_banner() {
   echo -e "${CAT_BLUE}      ╚═════╝  ╚═════╝    ╚═╝   ╚═╝     ╚═╝╚══════╝╚══════╝╚══════╝${NC}"
   echo ""
 }
-# Handle early exit for help/version (before banner and setup)
+# Handle early exit for help/version/debug flags (before banner and setup)
 if [[ "${SHOW_HELP:-}" == "true" ]]; then
   show_help
   exit 0
@@ -433,6 +453,11 @@ fi
 
 if [[ "${SHOW_VERSION:-}" == "true" ]]; then
   show_version
+  exit 0
+fi
+
+if [[ "${SHOW_DETECTED_OS:-}" == "true" ]]; then
+  detect_os
   exit 0
 fi
 
@@ -454,18 +479,20 @@ case $dotfiles_os in
     macos_setup
     ;;
   *)
-    __task "Unsupported OS"
-    _cmd "echo 'Unsupported OS'"
+    printf "${CAT_RED} [✗]  ${CAT_TEXT}Unsupported OS: %s${NC}\n" "$dotfiles_os"
+    exit 1
     ;;
 esac
 
 if ! [[ -d "$DOTFILES_DIR" ]]; then
   __task "Downloading dotfiles repository (This may take a minute)"
-  _cmd "git clone --quiet https://github.com/ArminIrannejad/.dotfiles.git $DOTFILES_DIR"
+  _cmd "git clone --quiet --branch \"$DOTFILES_BRANCH\" https://github.com/ArminIrannejad/.dotfiles.git \"$DOTFILES_DIR\""
   _task_done
 else
   __task "Updating dotfiles repository"
-  _cmd "git -C $DOTFILES_DIR pull --quiet"
+  _cmd "git -C \"$DOTFILES_DIR\" fetch --quiet origin \"$DOTFILES_BRANCH\""
+  _cmd "git -C \"$DOTFILES_DIR\" switch --quiet \"$DOTFILES_BRANCH\" || git -C \"$DOTFILES_DIR\" switch --quiet --track \"origin/$DOTFILES_BRANCH\""
+  _cmd "git -C \"$DOTFILES_DIR\" pull --quiet --ff-only"
   _task_done
 fi
 
@@ -624,10 +651,6 @@ if [[ -n "$DELETE_ROLE" ]]; then
 fi
 
 update_ansible_galaxy "$dotfiles_os"
-
-# confirmVaultAccess
-
-rm -f $VAULT_SECRET_FILE
 _task_done
 ansible-playbook "$DOTFILES_DIR/main.yml" "${REMAINING_ARGS[@]}"
 

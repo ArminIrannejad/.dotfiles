@@ -13,6 +13,7 @@
     state: present
     update_cache: true
   become: true
+  when: can_install_packages | default(false)
 
 - name: "Neovim | Ubuntu | Add Neovim Nightly PPA"
   ansible.builtin.apt_repository:
@@ -20,6 +21,7 @@
     state: present
     mode: "0644"
   become: true
+  when: can_install_packages | default(false)
 
 - name: "Neovim | Ubuntu | Install Neovim nightly"
   ansible.builtin.apt:
@@ -27,3 +29,9 @@
     state: latest
     update_cache: true
   become: true
+  when: can_install_packages | default(false)
+
+- name: "Neovim | Ubuntu | Package installation skipped"
+  ansible.builtin.debug:
+    msg: "Neovim package installation skipped because sudo is unavailable."
+  when: not (can_install_packages | default(false))
