@@ -110,7 +110,7 @@ trap cleanup EXIT INT TERM
 # Paths
 DOTFILES_LOG="$HOME/.dotfiles.log"
 DOTFILES_DIR="$HOME/.dotfiles"
-DOTFILES_BRANCH="${DOTFILES_BRANCH:-feature/ansible-dotfiles}"
+DOTFILES_BRANCH="${DOTFILES_BRANCH:-master}"
 IS_FIRST_RUN="$HOME/.dotfiles_run"
 DOTFILES_VERSION="1.0.0"
 # Spinner PID tracking
