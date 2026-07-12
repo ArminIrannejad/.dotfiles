@@ -16,6 +16,12 @@ elif command -v batcat >/dev/null 2>&1; then
 fi
 
 export PATH="$HOME/.local/bin:$PATH"
+
+# Go toolchain from go.dev lands in /usr/local/go; distro packages use /usr/bin.
+# $HOME/go/bin is GOPATH/bin, where `go install` puts binaries.
+[ -d /usr/local/go/bin ] && export PATH="/usr/local/go/bin:$PATH"
+[ -d "$HOME/go/bin" ] && export PATH="$HOME/go/bin:$PATH"
+
 export GPG_TTY="$(tty 2>/dev/null || true)"
 export STARSHIP_CONFIG="$XDG_CONFIG_HOME/starship.toml"
 
