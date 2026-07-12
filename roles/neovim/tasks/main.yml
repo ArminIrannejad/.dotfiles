@@ -38,16 +38,3 @@
     state: link
     force: true
 
-- name: "Neovim | Check system TFLint"
-  ansible.builtin.stat:
-    path: /usr/local/bin/tflint
-  register: neovim_system_tflint
-
-- name: "Neovim | Remove duplicate Mason TFLint"
-  ansible.builtin.file:
-    path: "{{ item }}"
-    state: absent
-  loop:
-    - "{{ ansible_facts['user_dir'] }}/.local/share/nvim/mason/bin/tflint"
-    - "{{ ansible_facts['user_dir'] }}/.local/share/nvim/mason/packages/tflint"
-  when: neovim_system_tflint.stat.exists
