@@ -1,11 +1,11 @@
 ---
 
-- name: "{{ role_name }} | Checking for distribution config: {{ ansible_facts['distribution'] }}"
+- name: "{{ role_name | capitalize }} | Checking for distribution config: {{ ansible_facts['distribution'] }}"
   ansible.builtin.stat:
     path: "{{ role_path }}/tasks/{{ ansible_facts['distribution'] }}.yml"
   register: nvim_distribution_config
 
-- name: "{{ role_name }} | Run tasks: {{ ansible_facts['distribution'] }}"
+- name: "{{ role_name | capitalize }} | Run tasks: {{ ansible_facts['distribution'] }}"
   ansible.builtin.include_tasks: "{{ ansible_facts['distribution'] }}.yml"
   when: nvim_distribution_config.stat.exists
 

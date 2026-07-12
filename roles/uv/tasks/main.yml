@@ -1,11 +1,11 @@
 ---
-- name: "{{ role_name }} | Ensure user bin exists"
+- name: "{{ role_name | capitalize }} | Ensure user bin exists"
   ansible.builtin.file:
     path: "{{ bin_dir }}"
     state: directory
     mode: "0755"
 
-- name: "{{ role_name }} | Check installed"
+- name: "{{ role_name | capitalize }} | Check installed"
   ansible.builtin.command:
     cmd: "{{ bin_dir }}/uv --version"
   register: uv_installed
@@ -13,14 +13,14 @@
   changed_when: false
   failed_when: false
 
-- name: "{{ role_name }} | Download installer"
+- name: "{{ role_name | capitalize }} | Download installer"
   ansible.builtin.get_url:
     url: https://astral.sh/uv/install.sh
     dest: /tmp/uv-install.sh
     mode: "0755"
   when: uv_installed.rc != 0
 
-- name: "{{ role_name }} | Install"
+- name: "{{ role_name | capitalize }} | Install"
   ansible.builtin.command:
     cmd: sh /tmp/uv-install.sh
     creates: "{{ bin_dir }}/uv"
@@ -29,11 +29,11 @@
     UV_NO_MODIFY_PATH: "1"
   when: uv_installed.rc != 0
 
-- name: "{{ role_name }} | Check for distribution cleanup tasks"
+- name: "{{ role_name | capitalize }} | Check for distribution cleanup tasks"
   ansible.builtin.stat:
     path: "{{ role_path }}/tasks/{{ ansible_facts['distribution'] }}.yml"
   register: uv_distribution_config
 
-- name: "{{ role_name }} | Run distribution cleanup tasks"
+- name: "{{ role_name | capitalize }} | Run distribution cleanup tasks"
   ansible.builtin.include_tasks: "{{ ansible_facts['distribution'] }}.yml"
   when: uv_distribution_config.stat.exists

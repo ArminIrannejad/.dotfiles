@@ -1,10 +1,10 @@
 ---
-- name: "{{ role_name }} | Check for distribution config"
+- name: "{{ role_name | capitalize }} | Check for distribution config"
   ansible.builtin.stat:
     path: "{{ role_path }}/tasks/{{ ansible_facts['distribution'] }}.yml"
   register: python_dev_distribution_config
 
-- name: "{{ role_name }} | Run distribution tasks"
+- name: "{{ role_name | capitalize }} | Run distribution tasks"
   ansible.builtin.include_tasks: "{{ ansible_facts['distribution'] }}.yml"
   when: python_dev_distribution_config.stat.exists
 

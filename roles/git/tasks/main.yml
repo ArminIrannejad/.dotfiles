@@ -1,5 +1,5 @@
 ---
-- name: "{{ role_name }} | Select distribution tasks: {{ ansible_facts['distribution'] }}"
+- name: "{{ role_name | capitalize }} | Select distribution tasks: {{ ansible_facts['distribution'] }}"
   ansible.builtin.set_fact:
     git_distribution_tasks_file: >-
       {{
@@ -8,12 +8,12 @@
         else ansible_facts['distribution'] ~ '.yml'
       }}
 
-- name: "{{ role_name }} | Checking for distribution config: {{ ansible_facts['distribution'] }}"
+- name: "{{ role_name | capitalize }} | Checking for distribution config: {{ ansible_facts['distribution'] }}"
   ansible.builtin.stat:
     path: "{{ role_path }}/tasks/{{ git_distribution_tasks_file }}"
   register: git_distribution_config
 
-- name: "{{ role_name }} | Run tasks: {{ ansible_facts['distribution'] }}"
+- name: "{{ role_name | capitalize }} | Run tasks: {{ ansible_facts['distribution'] }}"
   ansible.builtin.include_tasks: "{{ git_distribution_tasks_file }}"
   when: git_distribution_config.stat.exists
 
