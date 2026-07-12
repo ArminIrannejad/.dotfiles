@@ -1,8 +1,9 @@
 ---
 - name: Lua | Update APT cache
-  apt:
+  ansible.builtin.apt:
     update_cache: true
   become: true
+  when: can_install_packages | default(false)
 
 - name: Lua | Install Lua
   ansible.builtin.apt:
@@ -12,12 +13,19 @@
     - lua5.1
     - luarocks
     - luajit
+  when: can_install_packages | default(false)
+
+- name: Lua | Package installation skipped
+  ansible.builtin.debug:
+    msg: "Lua package installation skipped because sudo is unavailable."
+  when: not (can_install_packages | default(false))
 
 - name: Lua | Gather installed lua rocks
   ansible.builtin.command: luarocks list
   register: rocks
   changed_when: false
   check_mode: false
+  failed_when: false
 
 # - name: Lua | Install Lua modules
 #   ansible.builtin.command:
@@ -25,4 +33,3 @@
 #   loop:
 #     - luabitop
 #   when: item not in rocks.stdout
-

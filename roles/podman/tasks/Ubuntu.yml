@@ -7,14 +7,22 @@
   become: true
   loop:
     - podman
+  when: can_install_packages | default(false)
 
 # install if WSL
 - name: "Podman | Install Podman WSL Dependencies"
-  when: ansible_host_environment_is_wsl
   ansible.builtin.apt:
     name:
       - "{{ item }}"
     state: present
+  become: true
   loop:
     - qemu-system-x86
-  become: true
+  when:
+    - can_install_packages | default(false)
+    - ansible_host_environment_is_wsl
+
+- name: "Podman | Package installation skipped"
+  ansible.builtin.debug:
+    msg: "Podman package installation skipped because sudo is unavailable."
+  when: not (can_install_packages | default(false))
