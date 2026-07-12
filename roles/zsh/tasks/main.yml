@@ -19,32 +19,34 @@
     - "{{ ansible_facts['user_dir'] }}/.cache/zsh"
     - "{{ ansible_facts['user_dir'] }}/.local/state/zsh"
 
-- name: "Zsh | Copy .zshenv"
-  ansible.builtin.copy:
-    src: ".zshenv"
-    dest: "{{ ansible_facts['user_dir'] }}/.zshenv"
-    mode: "0644"
-
-- name: "Zsh | Copy .zshrc"
-  ansible.builtin.copy:
-    src: ".zshrc"
-    dest: "{{ ansible_facts['user_dir'] }}/.config/zsh/.zshrc"
-    mode: "0644"
-
-- name: "Zsh | Link .zshrc"
+- name: "Zsh | Link startup files"
   ansible.builtin.file:
-    src: "{{ ansible_facts['user_dir'] }}/.config/zsh/.zshrc"
-    dest: "{{ ansible_facts['user_dir'] }}/.zshrc"
+    src: "{{ role_path }}/files/{{ item.src }}"
+    dest: "{{ item.dest }}"
     state: link
     force: true
+  loop:
+    - src: .zshenv
+      dest: "{{ ansible_facts['user_dir'] }}/.zshenv"
+    - src: .zshenv
+      dest: "{{ ansible_facts['user_dir'] }}/.config/zsh/.zshenv"
+    - src: .zshrc
+      dest: "{{ ansible_facts['user_dir'] }}/.zshrc"
+    - src: .zshrc
+      dest: "{{ ansible_facts['user_dir'] }}/.config/zsh/.zshrc"
 
-- name: "Zsh | Copy custom zsh config"
-  ansible.builtin.copy:
-    dest: "{{ ansible_facts['user_dir'] }}/.config/"
-    src: "zsh"
-    mode: "0644"
-    directory_mode: "0755"
+- name: "Zsh | Link custom zsh config"
+  ansible.builtin.file:
+    src: "{{ role_path }}/files/zsh/{{ item }}"
+    dest: "{{ ansible_facts['user_dir'] }}/.config/zsh/{{ item }}"
+    state: link
     force: true
+  loop:
+    - aliases.zsh
+    - bindings.zsh
+    - fzf.zsh
+    - plugins.zsh
+    - prompt.zsh
 
 - name: "Zsh | Check for git"
   ansible.builtin.command: git --version

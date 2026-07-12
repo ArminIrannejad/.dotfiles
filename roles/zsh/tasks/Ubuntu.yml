@@ -9,13 +9,12 @@
   become: true
   when: can_install_packages | default(false)
 
-- name: "Zsh | {{ ansible_facts['distribution'] }} | Copy global zshenv"
-  ansible.builtin.copy:
-    src: global.zshenv
+- name: "Zsh | {{ ansible_facts['distribution'] }} | Link global zshenv"
+  ansible.builtin.file:
+    src: "{{ role_path }}/files/global.zshenv"
     dest: /etc/zsh/zshenv
-    owner: root
-    group: root
-    mode: "0644"
+    state: link
+    force: true
   become: true
   when: can_install_packages | default(false)
 

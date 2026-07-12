@@ -66,11 +66,12 @@
     scope: global
     value: "branch --format='%(HEAD) %(color:yellow)%(refname:short)%(color:reset) - %(contents:subject) %(color:green)(%(committerdate:relative)) [%(authorname)]' --sort=-committerdate"
 
-- name: "Git | Copy commit template"
-  ansible.builtin.copy:
-    src: global.commit.template
+- name: "Git | Link commit template"
+  ansible.builtin.file:
+    src: "{{ role_path }}/files/global.commit.template"
     dest: "{{ ansible_facts['user_dir'] }}/.config/git/commit_template"
-    mode: "0644"
+    state: link
+    force: true
 
 - name: "Git | Set commit.template"
   community.general.git_config:
