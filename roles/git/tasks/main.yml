@@ -35,7 +35,7 @@
     - { name: fetch.prune, value: "true" }
     - { name: init.defaultBranch, value: main }
     - { name: pull.ff, value: only }
-    - { name: pull.rebase, value: "true" }
+    - { name: pull.rebase, value: "false" }
     - { name: push.autoSetupRemote, value: "true" }
     - { name: rebase.autoStash, value: "true" }
     - { name: rerere.enabled, value: "true" }
@@ -54,27 +54,4 @@
     value: "{{ git_user_name }}"
   when: git_user_name | default('') | length > 0
 
-- name: "Git | Set undo alias"
-  community.general.git_config:
-    name: alias.undo
-    scope: global
-    value: "reset HEAD~1 --mixed"
 
-- name: "Git | Set br alias"
-  community.general.git_config:
-    name: alias.br
-    scope: global
-    value: "branch --format='%(HEAD) %(color:yellow)%(refname:short)%(color:reset) - %(contents:subject) %(color:green)(%(committerdate:relative)) [%(authorname)]' --sort=-committerdate"
-
-- name: "Git | Link commit template"
-  ansible.builtin.file:
-    src: "{{ role_path }}/files/global.commit.template"
-    dest: "{{ ansible_facts['user_dir'] }}/.config/git/commit_template"
-    state: link
-    force: true
-
-- name: "Git | Set commit.template"
-  community.general.git_config:
-    name: commit.template
-    scope: global
-    value: "{{ ansible_facts['user_dir'] }}/.config/git/commit_template"
