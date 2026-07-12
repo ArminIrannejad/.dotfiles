@@ -1,0 +1,34 @@
+---
+- name: "{{ role_name }} | Check for distribution config"
+  ansible.builtin.stat:
+    path: "{{ role_path }}/tasks/{{ ansible_facts['distribution'] }}.yml"
+  register: terraform_distribution_config
+
+- name: "{{ role_name }} | Run distribution tasks"
+  ansible.builtin.include_tasks: "{{ ansible_facts['distribution'] }}.yml"
+  when: terraform_distribution_config.stat.exists
+
+- name: "Terraform | Check TFLint"
+  ansible.builtin.command: tflint --version
+  register: terraform_tflint_check
+  check_mode: false
+  changed_when: false
+  failed_when: false
+
+- name: "Terraform | Download TFLint installer"
+  ansible.builtin.get_url:
+    url: https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh
+    dest: /tmp/tflint-install.sh
+    mode: "0755"
+  when:
+    - terraform_tflint_check.rc != 0
+    - can_install_packages | default(false)
+
+- name: "Terraform | Install TFLint"
+  ansible.builtin.command:
+    cmd: bash /tmp/tflint-install.sh
+    creates: /usr/local/bin/tflint
+  become: true
+  when:
+    - terraform_tflint_check.rc != 0
+    - can_install_packages | default(false)

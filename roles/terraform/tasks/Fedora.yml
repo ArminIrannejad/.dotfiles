@@ -1,0 +1,17 @@
+---
+- name: "Terraform | Fedora | Configure HashiCorp repository"
+  ansible.builtin.get_url:
+    url: https://rpm.releases.hashicorp.com/fedora/hashicorp.repo
+    dest: /etc/yum.repos.d/hashicorp.repo
+    owner: root
+    group: root
+    mode: "0644"
+  become: true
+  when: can_install_packages | default(false)
+
+- name: "Terraform | Fedora | Install Terraform"
+  ansible.builtin.dnf:
+    name: terraform
+    state: present
+  become: true
+  when: can_install_packages | default(false)
