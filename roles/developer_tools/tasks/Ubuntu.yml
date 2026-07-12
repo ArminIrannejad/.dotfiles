@@ -6,11 +6,9 @@
       - clang
       - cmake
       - fastfetch
-      - graphviz
       - hyperfine
       - jq
       - libtool
-      - pkg-config
     state: present
     update_cache: true
   become: true
