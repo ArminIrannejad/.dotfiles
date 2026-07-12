@@ -28,10 +28,12 @@
 - name: "Go-Lang | GOARCH Value"
   ansible.builtin.debug:
     var: goarch
+    verbosity: 1
 
 - name: "Go-Lang | GOOS Value"
   ansible.builtin.debug:
     var: goos
+    verbosity: 1
 
 - name: "Go-Lang | Getting version information"
   ansible.builtin.command: "/usr/local/go/bin/go version"
@@ -60,10 +62,12 @@
 - name: "Go-Lang | Show current_go_version debug"
   ansible.builtin.debug:
     var: current_go_version.stdout|default('')
+    verbosity: 1
 
 - name: "Go-Lang | Show go_latest_release debug"
   ansible.builtin.debug:
     var: go_latest_release
+    verbosity: 1
 
 - name: "Go-Lang | Install"
   block:

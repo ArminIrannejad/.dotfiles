@@ -23,6 +23,7 @@
 - name: Show normalized distribution
   ansible.builtin.debug:
     msg: "Distribution: {{ ansible_facts['distribution_original'] | default(ansible_facts['distribution']) }} -> {{ ansible_facts['distribution'] }}"
+    verbosity: 1
   when: ansible_facts['distribution_original'] | default(ansible_facts['distribution']) != ansible_facts['distribution']
   tags:
     - always

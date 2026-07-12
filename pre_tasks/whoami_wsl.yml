@@ -13,6 +13,7 @@
     wsl_host_user: "{{ windows_user.stdout }}"
   when: host_user is not defined
 
-- name: DEBUG
+- name: Show WSL host user
   ansible.builtin.debug:
     msg: "wsl_host_user: {{ wsl_host_user }}"
+    verbosity: 1
