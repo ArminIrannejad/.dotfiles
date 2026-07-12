@@ -21,9 +21,29 @@
       "rev": "05e8787020dcfdb937bf2ff23855ea2415b4e072",
       "src": "https://github.com/catppuccin/nvim"
     },
+    "cmp-buffer": {
+      "rev": "b74fab3656eea9de20a9b8116afa3cfc4ec09657",
+      "src": "https://github.com/hrsh7th/cmp-buffer"
+    },
+    "cmp-cmdline": {
+      "rev": "d126061b624e0af6c3a556428712dd4d4194ec6d",
+      "src": "https://github.com/hrsh7th/cmp-cmdline"
+    },
     "cmp-dbee": {
       "rev": "1650f67b9bf43c029fc37570665ca895a33cdf5a",
       "src": "https://github.com/MattiasMTS/cmp-dbee"
+    },
+    "cmp-nvim-lsp": {
+      "rev": "cbc7b02bb99fae35cb42f514762b89b5126651ef",
+      "src": "https://github.com/hrsh7th/cmp-nvim-lsp"
+    },
+    "cmp-path": {
+      "rev": "c642487086dbd9a93160e1679a1327be111cbc25",
+      "src": "https://github.com/hrsh7th/cmp-path"
+    },
+    "cmp_luasnip": {
+      "rev": "98d9cb5c2c38532bd9bdb481067b20fea8f32e90",
+      "src": "https://github.com/saadparwaiz1/cmp_luasnip"
     },
     "colorbuddy.vim": {
       "rev": "8b968581e5c19d22a861d5f3fe5dbd83394fa681",
@@ -62,7 +82,7 @@
       "src": "https://github.com/Everblush/nvim"
     },
     "fff.nvim": {
-      "rev": "1a8ef35ad8eef54dc718b4846c470af6eed85950",
+      "rev": "44a5b259570730a4236ecbf06673d43ef7b2263e",
       "src": "https://github.com/dmtrKovalenko/fff.nvim"
     },
     "fluoromachine.nvim": {
@@ -99,9 +119,8 @@
       "version": "'harpoon2'"
     },
     "haskell-tools.nvim": {
-      "rev": "a834b5b85323c8b2ff41f950d7bee32fd37e908d",
-      "src": "https://github.com/mrcjkb/haskell-tools.nvim",
-      "version": "'v10.0.0'"
+      "rev": "8d508bfea8729f423fa404ecf34b8728aeec20eb",
+      "src": "https://github.com/mrcjkb/haskell-tools.nvim"
     },
     "haskell-vim": {
       "rev": "f35d02204b4813d1dbe8b0e98cc39701a4b8e15e",
@@ -136,7 +155,7 @@
       "src": "https://github.com/dasupradyumna/midnight.nvim"
     },
     "mini.ai": {
-      "rev": "6d43e74cae75771b780a7270fec1f160613ed873",
+      "rev": "25248c6aa002391936a6200f12d1466015987133",
       "src": "https://github.com/nvim-mini/mini.ai"
     },
     "mini.jump": {
@@ -145,7 +164,7 @@
       "version": "'stable'"
     },
     "mini.nvim": {
-      "rev": "fdc8b9701616863e44f7a7a0802cfe16bd866539",
+      "rev": "4171fba613b64ade9a28e198bd5b4fea5ba45e22",
       "src": "https://github.com/echasnovski/mini.nvim"
     },
     "moonfly": {
@@ -176,13 +195,17 @@
       "rev": "de740991c12411b663994b2860f1a4fd0937c130",
       "src": "https://github.com/MunifTanjim/nui.nvim"
     },
+    "nvim-cmp": {
+      "rev": "2ffe79f1f021def8dd1fcd81deb16f1bb0d989f3",
+      "src": "https://github.com/hrsh7th/nvim-cmp"
+    },
     "nvim-dbee": {
       "rev": "dda517694889a5d238d7aa407403984da9f80cc0",
       "src": "https://github.com/kndndrj/nvim-dbee",
       "version": "'master'"
     },
     "nvim-lspconfig": {
-      "rev": "d224a1920728ba129880efc700d4a0180ac4ecbb",
+      "rev": "5955a100ae7155962330643924e21a798b9bdc91",
       "src": "https://github.com/neovim/nvim-lspconfig"
     },
     "nvim-treesitter": {
@@ -190,7 +213,7 @@
       "src": "https://github.com/nvim-treesitter/nvim-treesitter"
     },
     "nvim-web-devicons": {
-      "rev": "dad71387de386a946b123079d0e53f23028f3abd",
+      "rev": "09d1324e264c6950262dbe02a9bce2933a6800db",
       "src": "https://github.com/nvim-tree/nvim-web-devicons"
     },
     "oil.nvim": {
