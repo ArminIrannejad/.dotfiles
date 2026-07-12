@@ -5,7 +5,6 @@
       - build-essential
       - clang
       - cmake
-      - fastfetch
       - hyperfine
       - jq
       - libtool
@@ -13,3 +12,21 @@
     update_cache: true
   become: true
   when: can_install_packages | default(false)
+
+- name: "Developer tools | Ubuntu | Install optional packages"
+  ansible.builtin.apt:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - fastfetch
+  become: true
+  register: developer_tools_optional
+  failed_when: false
+  when: can_install_packages | default(false)
+
+- name: "Developer tools | Ubuntu | Report unavailable optional packages"
+  ansible.builtin.debug:
+    msg: "Optional packages unavailable on this release, skipped: {{ developer_tools_unavailable | join(', ') }}"
+  vars:
+    developer_tools_unavailable: "{{ developer_tools_optional.results | default([]) | selectattr('msg', 'defined') | map(attribute='item') | list }}"
+  when: developer_tools_unavailable | length > 0
