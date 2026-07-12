@@ -102,6 +102,10 @@
           notify:
             - Remove extracted go directory
 
+        - name: "Go-Lang | Report version change"
+          ansible.builtin.debug:
+            msg: "Go updated: {{ current_go_version.stdout | default('') | regex_search('go[0-9]+\\.[0-9]+(\\.[0-9]+)?') | default('none', true) }} -> {{ go_latest_release }}"
+
 - name: "Go-Lang | Installation skipped"
   ansible.builtin.debug:
     msg: "Go installation skipped because sudo is unavailable. Run `sudo -v` and rerun dotfiles to install Go."
