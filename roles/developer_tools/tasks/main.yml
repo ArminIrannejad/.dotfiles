@@ -1,0 +1,14 @@
+---
+- name: "{{ role_name }} | Select distribution tasks"
+  ansible.builtin.set_fact:
+    developer_tools_tasks_file: >-
+      {{ 'Ubuntu.yml' if ansible_facts['distribution'] == 'Debian' else ansible_facts['distribution'] ~ '.yml' }}
+
+- name: "{{ role_name }} | Check distribution support"
+  ansible.builtin.stat:
+    path: "{{ role_path }}/tasks/{{ developer_tools_tasks_file }}"
+  register: developer_tools_distribution_config
+
+- name: "{{ role_name }} | Run distribution tasks"
+  ansible.builtin.include_tasks: "{{ developer_tools_tasks_file }}"
+  when: developer_tools_distribution_config.stat.exists
