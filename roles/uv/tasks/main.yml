@@ -9,6 +9,7 @@
   ansible.builtin.command:
     cmd: "{{ bin_dir }}/uv --version"
   register: uv_installed
+  check_mode: false
   changed_when: false
   failed_when: false
 
@@ -27,3 +28,12 @@
     UV_INSTALL_DIR: "{{ bin_dir }}"
     UV_NO_MODIFY_PATH: "1"
   when: uv_installed.rc != 0
+
+- name: "{{ role_name }} | Check for distribution cleanup tasks"
+  ansible.builtin.stat:
+    path: "{{ role_path }}/tasks/{{ ansible_facts['distribution'] }}.yml"
+  register: uv_distribution_config
+
+- name: "{{ role_name }} | Run distribution cleanup tasks"
+  ansible.builtin.include_tasks: "{{ ansible_facts['distribution'] }}.yml"
+  when: uv_distribution_config.stat.exists
