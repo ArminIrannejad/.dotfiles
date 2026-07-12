@@ -1,0 +1,12 @@
+# Logs and Temporary Files
+*.log
+*.swp
+*~
+*.tgz
+.DS_Store
+
+# Compiled Code and Build Artifacts
+__pycache__/
+dist/
+build/
+
