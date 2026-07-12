@@ -34,7 +34,4 @@
 - name: "Neovim | Ubuntu | Package installation skipped"
   ansible.builtin.debug:
     msg: "Neovim package installation skipped because sudo is unavailable."
-  # display_ok_hosts is off, which hides 'ok' results; force this to report as
-  # changed so the warning is never silently swallowed.
-  changed_when: true
   when: not (can_install_packages | default(false))

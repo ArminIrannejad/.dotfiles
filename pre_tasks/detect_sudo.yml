@@ -204,9 +204,6 @@
     msg:
       - "Sudo is available, but no cached sudo credentials or Ansible become password were detected."
       - "Package roles will skip privileged installs unless you pre-cache sudo with `sudo -v` or run ansible-playbook with `--ask-become-pass`."
-  # display_ok_hosts is off, which hides 'ok' results; force this to report as
-  # changed so the warning is never silently swallowed.
-  changed_when: true
   when:
     - sudo_password_based_available | default(false) | bool
     - sudo_requires_password | bool

@@ -639,18 +639,6 @@ fi
 
 update_ansible_galaxy "$dotfiles_os"
 _task_done
-
-# ansible.cfg hides ok/skipped results so a normal run only reports what changed.
-# Ansible suppresses those regardless of verbosity, so restore them when the user
-# actually asks for detail with -v/-vv/-vvv.
-for arg in "${REMAINING_ARGS[@]}"; do
-  if [[ "$arg" =~ ^-v+$ || "$arg" == "--verbose" ]]; then
-    export ANSIBLE_DISPLAY_OK_HOSTS=True
-    export ANSIBLE_DISPLAY_SKIPPED_HOSTS=True
-    break
-  fi
-done
-
 ansible-playbook "$DOTFILES_DIR/main.yml" "${REMAINING_ARGS[@]}"
 
 popd 2>&1 > /dev/null
