@@ -1,0 +1,10 @@
+---
+- name: "Python dev | Fedora | Install packages"
+  ansible.builtin.dnf:
+    name:
+      - poetry
+      - python3-coverage
+      - python3-devel
+    state: present
+  become: true
+  when: can_install_packages | default(false)
