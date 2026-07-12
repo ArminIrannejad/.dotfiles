@@ -1,0 +1,16 @@
+---
+- name: "Haskell | Fedora | Install GHCup dependencies"
+  ansible.builtin.dnf:
+    name:
+      - gcc
+      - gcc-c++
+      - gmp
+      - gmp-devel
+      - make
+      - ncurses
+      - ncurses-compat-libs
+      - perl
+      - xz
+    state: present
+  become: true
+  when: can_install_packages | default(false)

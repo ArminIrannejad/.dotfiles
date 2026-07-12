@@ -1,0 +1,73 @@
+---
+- name: "{{ role_name }} | Check for distribution config"
+  ansible.builtin.stat:
+    path: "{{ role_path }}/tasks/{{ ansible_facts['distribution'] }}.yml"
+  register: haskell_distribution_config
+
+- name: "{{ role_name }} | Run distribution tasks"
+  ansible.builtin.include_tasks: "{{ ansible_facts['distribution'] }}.yml"
+  when: haskell_distribution_config.stat.exists
+
+- name: "Haskell | Check GHCup"
+  ansible.builtin.stat:
+    path: "{{ ansible_facts['user_dir'] }}/.ghcup/bin/ghcup"
+  register: haskell_ghcup
+
+- name: "Haskell | Download GHCup bootstrap"
+  ansible.builtin.get_url:
+    url: https://get-ghcup.haskell.org
+    dest: /tmp/ghcup-bootstrap.sh
+    mode: "0755"
+  when: not haskell_ghcup.stat.exists
+
+- name: "Haskell | Install GHCup"
+  ansible.builtin.command:
+    cmd: sh /tmp/ghcup-bootstrap.sh
+    creates: "{{ ansible_facts['user_dir'] }}/.ghcup/bin/ghcup"
+  environment:
+    BOOTSTRAP_HASKELL_NONINTERACTIVE: "1"
+    BOOTSTRAP_HASKELL_MINIMAL: "1"
+
+- name: "Haskell | Install selected toolchain versions"
+  ansible.builtin.command:
+    cmd: >-
+      {{ ansible_facts['user_dir'] }}/.ghcup/bin/ghcup install
+      {{ item.tool }} {{ item.version }}
+    creates: "{{ item.creates }}"
+  environment:
+    PATH: "{{ ansible_facts['user_dir'] }}/.ghcup/bin:{{ ansible_facts['env']['PATH'] }}"
+  loop:
+    - tool: ghc
+      version: "{{ haskell_ghc_version }}"
+      creates: "{{ ansible_facts['user_dir'] }}/.ghcup/ghc/{{ haskell_ghc_version }}"
+    - tool: cabal
+      version: "{{ haskell_cabal_version }}"
+      creates: "{{ ansible_facts['user_dir'] }}/.ghcup/cabal/{{ haskell_cabal_version }}"
+    - tool: stack
+      version: "{{ haskell_stack_version }}"
+      creates: "{{ ansible_facts['user_dir'] }}/.ghcup/stack/{{ haskell_stack_version }}"
+    - tool: hls
+      version: "{{ haskell_hls_version }}"
+      creates: "{{ ansible_facts['user_dir'] }}/.ghcup/hls/{{ haskell_hls_version }}"
+  loop_control:
+    label: "{{ item.tool }} {{ item.version }}"
+
+- name: "Haskell | Select active toolchain versions"
+  ansible.builtin.command:
+    cmd: >-
+      {{ ansible_facts['user_dir'] }}/.ghcup/bin/ghcup set
+      {{ item.tool }} {{ item.version }}
+  environment:
+    PATH: "{{ ansible_facts['user_dir'] }}/.ghcup/bin:{{ ansible_facts['env']['PATH'] }}"
+  changed_when: false
+  loop:
+    - tool: ghc
+      version: "{{ haskell_ghc_version }}"
+    - tool: cabal
+      version: "{{ haskell_cabal_version }}"
+    - tool: stack
+      version: "{{ haskell_stack_version }}"
+    - tool: hls
+      version: "{{ haskell_hls_version }}"
+  loop_control:
+    label: "{{ item.tool }} {{ item.version }}"
