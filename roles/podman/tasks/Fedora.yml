@@ -1,0 +1,7 @@
+---
+- name: "Podman | Fedora | Install Podman"
+  ansible.builtin.dnf:
+    name: podman
+    state: present
+  become: true
+  when: can_install_packages | default(false)

@@ -1,0 +1,16 @@
+---
+- name: "uv | Fedora | Check for duplicate RPM installation"
+  ansible.builtin.command: rpm -q uv
+  register: uv_fedora_rpm
+  check_mode: false
+  changed_when: false
+  failed_when: false
+
+- name: "uv | Fedora | Remove duplicate RPM installation"
+  ansible.builtin.dnf:
+    name: uv
+    state: absent
+  become: true
+  when:
+    - can_install_packages | default(false)
+    - uv_fedora_rpm.rc == 0

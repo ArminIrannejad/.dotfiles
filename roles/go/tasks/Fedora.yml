@@ -1,0 +1,15 @@
+---
+- name: "Go | Fedora | Install Go and build dependencies"
+  ansible.builtin.dnf:
+    name:
+      - findutils
+      - gcc
+      - git
+      - golang
+      - jq
+      - make
+      - rsync
+      - tar
+    state: present
+  become: true
+  when: can_install_packages | default(false)

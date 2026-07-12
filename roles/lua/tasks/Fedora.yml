@@ -1,0 +1,10 @@
+---
+- name: "Lua | Fedora | Install Lua toolchain"
+  ansible.builtin.dnf:
+    name:
+      - lua
+      - luajit
+      - luarocks
+    state: present
+  become: true
+  when: can_install_packages | default(false)
