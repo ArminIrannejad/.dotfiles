@@ -10,6 +10,16 @@
   become: true
   when: can_install_packages | default(false)
 
+- name: "Zsh | {{ ansible_facts['distribution'] }} | Copy global zshenv"
+  ansible.builtin.copy:
+    src: global.zshenv
+    dest: /etc/zshenv
+    owner: root
+    group: root
+    mode: "0644"
+  become: true
+  when: can_install_packages | default(false)
+
 - name: "Zsh | {{ ansible_facts['distribution'] }} | Set default shell"
   ansible.builtin.user:
     name: "{{ host_user }}"
