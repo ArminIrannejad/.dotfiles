@@ -15,10 +15,10 @@ default_roles:
   - fd
   - fzf
   - git
-  - gitleaks
+  # - gitleaks
   - go
   - haskell
-  - hyperfine
+  # - hyperfine
   - java
   - jq
   - lua
