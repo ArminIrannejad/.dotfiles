@@ -1,0 +1,8 @@
+---
+- name: "Btop | {{ ansible_facts['distribution'] }} | Install packages"
+  ansible.builtin.apt:
+    name: btop
+    state: present
+    update_cache: true
+  become: true
+  when: can_install_packages | default(false)
