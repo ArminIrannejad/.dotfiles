@@ -1,0 +1,7 @@
+---
+- name: "Bat | {{ ansible_facts['distribution'] }} | Install packages"
+  ansible.builtin.dnf:
+    name: bat
+    state: present
+  become: true
+  when: can_install_packages | default(false)

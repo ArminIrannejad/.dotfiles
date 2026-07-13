@@ -1,0 +1,26 @@
+---
+- name: "Bat | {{ ansible_facts['distribution'] }} | Install packages"
+  ansible.builtin.apt:
+    name: bat
+    state: present
+    update_cache: true
+  become: true
+  when: can_install_packages | default(false)
+
+- name: "Bat | {{ ansible_facts['distribution'] }} | Ensure bin directory exists"
+  ansible.builtin.file:
+    path: "{{ bin_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: "Bat | {{ ansible_facts['distribution'] }} | Detect batcat"
+  ansible.builtin.stat:
+    path: /usr/bin/batcat
+  register: bat_batcat
+
+- name: "Bat | {{ ansible_facts['distribution'] }} | Link bat"
+  ansible.builtin.file:
+    src: /usr/bin/batcat
+    dest: "{{ bin_dir }}/bat"
+    state: link
+  when: bat_batcat.stat.exists
