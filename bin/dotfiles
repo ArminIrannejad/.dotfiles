@@ -90,6 +90,9 @@ for arg in "$@"; do
     --detect-os)
       SHOW_DETECTED_OS=true
       ;;
+    --list-tags)
+      SHOW_LIST_TAGS=true
+      ;;
   esac
 done
 
@@ -127,6 +130,7 @@ show_help() {
   echo -e "    ${CAT_GREEN}-h, --help${NC}              Show this help message"
   echo -e "    ${CAT_GREEN}--version${NC}               Show version information"
   echo -e "    ${CAT_GREEN}--detect-os${NC}             Print normalized OS identifier and exit"
+  echo -e "    ${CAT_GREEN}--list-tags${NC}             List available role tags and exit"
   echo -e "    ${CAT_GREEN}--uninstall <role>${NC}      Uninstall a role (cleanup only)"
   echo -e "    ${CAT_GREEN}--delete <role>${NC}         Uninstall and delete a role from dotfiles"
   echo -e "    ${CAT_GREEN}-v, -vv, -vvv${NC}           Verbose mode (passed to ansible-playbook)"
@@ -149,7 +153,7 @@ show_help() {
   echo ""
   echo -e "${CAT_BLUE}ANSIBLE ARGUMENTS:${NC}"
   echo "    All arguments not recognized by dotfiles are passed to ansible-playbook."
-  echo "    Common options: -t <tags>, --check, -vvv, --list-tags"
+  echo "    Common options: -t <tags>, --check, -vvv"
   echo ""
   echo -e "${CAT_SUBTEXT0}For more information: https://github.com/ArminIrannejad/.dotfiles${NC}"
 }
@@ -161,6 +165,49 @@ show_version() {
     git_hash=$(git -C "$DOTFILES_DIR" rev-parse --short HEAD 2>/dev/null || echo "unknown")
   fi
   echo -e "${CAT_SAPPHIRE}Armin Dotfiles${NC} version ${CAT_GREEN}${DOTFILES_VERSION}${NC} (${CAT_SUBTEXT1}${git_hash}${NC})"
+}
+
+# Print the entries of a top-level YAML list, e.g. yaml_list_items all.yml default_roles
+yaml_list_items() {
+  awk -v key="$2" '
+    $0 ~ "^" key ":" { in_block = 1; next }
+    in_block && /^[[:space:]]+-[[:space:]]*/ {
+      sub(/^[[:space:]]*-[[:space:]]*/, "")
+      print
+      next
+    }
+    in_block && /^[^[:space:]]/ { in_block = 0 }
+  ' "$1"
+}
+
+# Roles are pulled in by a dynamic include_role loop, so ansible-playbook
+# --list-tags cannot enumerate them. List the role directories instead.
+list_role_tags() {
+  local roles_dir="$DOTFILES_DIR/roles"
+  local all_yml="$DOTFILES_DIR/group_vars/all.yml"
+
+  if [[ ! -d "$roles_dir" ]]; then
+    echo -e "${RED} [✗]  ${CAT_TEXT}Error: no roles directory at ${roles_dir}${NC}"
+    exit 1
+  fi
+
+  local defaults=""
+  if [[ -f "$all_yml" ]]; then
+    defaults=$(yaml_list_items "$all_yml" default_roles)
+  fi
+
+  echo -e "${CAT_BLUE}ROLE TAGS:${NC}"
+  local role
+  for role in "$roles_dir"/*/; do
+    role=$(basename "$role")
+    if grep -qxF "$role" <<< "$defaults"; then
+      echo -e "    ${CAT_GREEN}${role}${NC}"
+    else
+      echo -e "    ${CAT_OVERLAY1}${role}${NC} ${CAT_SUBTEXT0}(not in default_roles)${NC}"
+    fi
+  done
+  echo ""
+  echo -e "${CAT_SUBTEXT0}Green tags run by default. Use -t <tag>[,<tag>] to run a subset.${NC}"
 }
 
 # Spinner function that runs in background
@@ -448,6 +495,11 @@ if [[ "${SHOW_DETECTED_OS:-}" == "true" ]]; then
   exit 0
 fi
 
+if [[ "${SHOW_LIST_TAGS:-}" == "true" ]]; then
+  list_role_tags
+  exit 0
+fi
+
 print_banner
 
 dotfiles_os=$(detect_os)
@@ -607,16 +659,18 @@ if [[ -n "$DELETE_ROLE" ]]; then
       fi
     fi
 
-    # Remove from group_vars/all.yml (with backup)
-    if grep -q "^  - $DELETE_ROLE$" "$DOTFILES_DIR/group_vars/all.yml"; then
-      __task "Removing $DELETE_ROLE from configuration"
-      cp "$DOTFILES_DIR/group_vars/all.yml" "$DOTFILES_DIR/group_vars/all.yml.bak"
-      # Use portable sed -i syntax (macOS requires '', Linux doesn't)
-      if [[ "$OSTYPE" == "darwin"* ]]; then
-        sed -i '' "/^  - $DELETE_ROLE$/d" "$DOTFILES_DIR/group_vars/all.yml"
-      else
-        sed -i "/^  - $DELETE_ROLE$/d" "$DOTFILES_DIR/group_vars/all.yml"
-      fi
+    # Remove from default_roles in group_vars/all.yml (with backup). The role name
+    # can also appear in the package lists, so only touch the default_roles block.
+    ALL_YML="$DOTFILES_DIR/group_vars/all.yml"
+    if yaml_list_items "$ALL_YML" default_roles | grep -qxF "$DELETE_ROLE"; then
+      __task "Removing $DELETE_ROLE from default_roles"
+      cp "$ALL_YML" "$ALL_YML.bak"
+      awk -v role="$DELETE_ROLE" '
+        /^default_roles:/ { in_block = 1; print; next }
+        in_block && /^[^[:space:]]/ { in_block = 0 }
+        in_block && $0 ~ "^[[:space:]]+-[[:space:]]*" role "[[:space:]]*$" { next }
+        { print }
+      ' "$ALL_YML.bak" > "$ALL_YML"
       _task_done
     fi
 
