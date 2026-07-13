@@ -1,20 +1,41 @@
 git_user_name: "ArminIrannejad"
 git_user_email: "armin.irannejad@gmail.com"
 
+# uv needs to run before py
 default_roles:
-  - developer_tools
+  - system
+  - bat
+  - btop
+  - build_essentials
+  - clang
+  - cmake
+  - curl
+  - eza
+  - fastfetch
+  - fd
+  - fzf
   - git
+  - gitleaks
   - go
   - haskell
+  - hyperfine
+  - java
+  - jq
   - lua
   - neovim
+  - nodejs
   - podman
-  - python_dev
+  - python
+  - ripgrep
   - starship
-  - system
   - terraform
   - tmux
+  - tree
+  - unzip
   - uv
+  - python_dev
+  - wget
+  - zoxide
   - zsh
 
 exclude_roles: []
@@ -35,53 +56,3 @@ haskell_hls_version: "2.13.0.0"
 
 config_dir: "{{ ansible_facts['env']['HOME'] }}/.config"
 bin_dir: "{{ ansible_facts['env']['HOME'] }}/.local/bin"
-
-packages_common_ubuntu:
-  - git
-  - zsh
-  - ripgrep
-  - fzf
-  - fd-find
-  - bat
-  - curl
-  - wget
-  - neovim
-  - npm
-  - nodejs
-  - tmux
-  - unzip
-  - btop
-  - build-essential
-  - tree
-  - python3
-  - python3-pip
-
-packages_optional_ubuntu:
-  - zoxide
-  - eza
-
-packages_common_fedora:
-  - git
-  - zsh
-  - ripgrep
-  - fzf
-  - fd-find
-  - zoxide
-  - bat
-  - curl
-  - wget
-  - neovim
-  - npm
-  - nodejs
-  - tmux
-  - unzip
-  - btop
-  - gcc
-  - gcc-c++
-  - make
-  - tree
-  - python3
-  - python3-pip
-
-packages_optional_fedora:
-  - eza
