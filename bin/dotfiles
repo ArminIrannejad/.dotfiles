@@ -604,9 +604,9 @@ run_uninstall_script() {
   export LRED LGREEN LYELLOW LBLUE LPURPLE LCYAN SEA OVERWRITE
   export CHECK_MARK X_MARK PIN CLOCK ARROW BOOK HOT WARNING RIGHT_ANGLE
 
-  # Run uninstall script with exported environment
+  # Run uninstall script with exported environment. _cmd exits 1 in the child on
+  # failure, so propagate the status instead of always reporting success.
   bash "$uninstall_script"
-  return 0
 }
 
 # Handle uninstall (cleanup only)
