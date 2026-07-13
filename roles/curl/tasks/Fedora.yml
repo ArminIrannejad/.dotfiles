@@ -1,0 +1,7 @@
+---
+- name: "Curl | {{ ansible_facts['distribution'] }} | Install packages"
+  ansible.builtin.dnf:
+    name: curl
+    state: present
+  become: true
+  when: can_install_packages | default(false)

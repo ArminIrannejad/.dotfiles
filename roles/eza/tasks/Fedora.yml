@@ -1,0 +1,21 @@
+---
+- name: "Eza | {{ ansible_facts['distribution'] }} | Install optional packages"
+  ansible.builtin.dnf:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - eza
+  become: true
+  register: eza_optional
+  ignore_errors: true
+  when: can_install_packages | default(false)
+
+# ignore_errors (not failed_when: false) so `failed` survives on the result:
+# apt/dnf set `msg` even on success, so filtering by msg reports every package
+# as unavailable.
+- name: "Eza | {{ ansible_facts['distribution'] }} | Report unavailable optional packages"
+  ansible.builtin.debug:
+    msg: "Optional packages unavailable on this release, skipped: {{ eza_unavailable | join(', ') }}"
+  vars:
+    eza_unavailable: "{{ eza_optional.results | default([]) | selectattr('failed') | map(attribute='item') | list }}"
+  when: eza_unavailable | length > 0

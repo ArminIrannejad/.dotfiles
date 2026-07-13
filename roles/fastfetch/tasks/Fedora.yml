@@ -1,0 +1,7 @@
+---
+- name: "Fastfetch | {{ ansible_facts['distribution'] }} | Install packages"
+  ansible.builtin.dnf:
+    name: fastfetch
+    state: present
+  become: true
+  when: can_install_packages | default(false)

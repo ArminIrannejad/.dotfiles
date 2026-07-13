@@ -1,0 +1,7 @@
+---
+- name: "Jq | {{ ansible_facts['distribution'] }} | Install packages"
+  ansible.builtin.dnf:
+    name: jq
+    state: present
+  become: true
+  when: can_install_packages | default(false)

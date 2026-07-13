@@ -1,0 +1,8 @@
+---
+- name: "Fzf | {{ ansible_facts['distribution'] }} | Install packages"
+  ansible.builtin.apt:
+    name: fzf
+    state: present
+    update_cache: true
+  become: true
+  when: can_install_packages | default(false)

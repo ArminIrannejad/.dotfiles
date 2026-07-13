@@ -1,0 +1,26 @@
+---
+- name: "Fd | {{ ansible_facts['distribution'] }} | Install packages"
+  ansible.builtin.apt:
+    name: fd-find
+    state: present
+    update_cache: true
+  become: true
+  when: can_install_packages | default(false)
+
+- name: "Fd | {{ ansible_facts['distribution'] }} | Ensure bin directory exists"
+  ansible.builtin.file:
+    path: "{{ bin_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: "Fd | {{ ansible_facts['distribution'] }} | Detect fdfind"
+  ansible.builtin.stat:
+    path: /usr/bin/fdfind
+  register: fd_fdfind
+
+- name: "Fd | {{ ansible_facts['distribution'] }} | Link fd"
+  ansible.builtin.file:
+    src: /usr/bin/fdfind
+    dest: "{{ bin_dir }}/fd"
+    state: link
+  when: fd_fdfind.stat.exists

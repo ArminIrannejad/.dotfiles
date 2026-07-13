@@ -1,0 +1,7 @@
+---
+- name: "Unzip | {{ ansible_facts['distribution'] }} | Install packages"
+  ansible.builtin.dnf:
+    name: unzip
+    state: present
+  become: true
+  when: can_install_packages | default(false)
