@@ -1,0 +1,7 @@
+---
+- name: "Zoxide | {{ ansible_facts['distribution'] }} | Install packages"
+  ansible.builtin.dnf:
+    name: zoxide
+    state: present
+  become: true
+  when: can_install_packages | default(false)

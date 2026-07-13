@@ -1,0 +1,21 @@
+---
+- name: "Zoxide | {{ ansible_facts['distribution'] }} | Install optional packages"
+  ansible.builtin.apt:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - zoxide
+  become: true
+  register: zoxide_optional
+  ignore_errors: true
+  when: can_install_packages | default(false)
+
+# ignore_errors (not failed_when: false) so `failed` survives on the result:
+# apt/dnf set `msg` even on success, so filtering by msg reports every package
+# as unavailable.
+- name: "Zoxide | {{ ansible_facts['distribution'] }} | Report unavailable optional packages"
+  ansible.builtin.debug:
+    msg: "Optional packages unavailable on this release, skipped: {{ zoxide_unavailable | join(', ') }}"
+  vars:
+    zoxide_unavailable: "{{ zoxide_optional.results | default([]) | selectattr('failed') | map(attribute='item') | list }}"
+  when: zoxide_unavailable | length > 0
