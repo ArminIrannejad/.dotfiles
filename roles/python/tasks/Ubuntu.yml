@@ -1,0 +1,10 @@
+---
+- name: "Python | {{ ansible_facts['distribution'] }} | Install packages"
+  ansible.builtin.apt:
+    name:
+      - python3
+      - python3-pip
+    state: present
+    update_cache: true
+  become: true
+  when: can_install_packages | default(false)
