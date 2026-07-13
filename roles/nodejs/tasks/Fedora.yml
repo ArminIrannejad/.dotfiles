@@ -1,0 +1,9 @@
+---
+- name: "Nodejs | {{ ansible_facts['distribution'] }} | Install packages"
+  ansible.builtin.dnf:
+    name:
+      - nodejs
+      - npm
+    state: present
+  become: true
+  when: can_install_packages | default(false)
