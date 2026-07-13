@@ -1,19 +1,23 @@
 ---
+# Needs Windows interop (powershell.exe). ps_interop is probed in
+# powershell_executionpolicy.yml, which runs immediately before this.
 - name: Detect Windows Current User
   ansible.builtin.shell:
     cmd: $env:UserName
   register: windows_user
   changed_when: false
-  failed_when: windows_user.rc != 0
   args:
     executable: powershell.exe
+  when: ps_interop.rc | default(1) == 0
 
 - name: Register Windows Current User
   ansible.builtin.set_fact:
     wsl_host_user: "{{ windows_user.stdout }}"
-  when: host_user is not defined
+  when:
+    - host_user is not defined
+    - windows_user.stdout is defined
 
 - name: Show WSL host user
   ansible.builtin.debug:
-    msg: "wsl_host_user: {{ wsl_host_user }}"
+    msg: "wsl_host_user: {{ wsl_host_user | default('unavailable') }}"
     verbosity: 1

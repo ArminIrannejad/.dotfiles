@@ -1,4 +1,14 @@
 ---
+# Being in WSL does not guarantee Windows interop is enabled: if the WSLInterop
+# binfmt handler is not registered, powershell.exe cannot be executed at all.
+# Probe first so a WSL box without interop skips this instead of failing the run.
+- name: Check Windows interop availability
+  ansible.builtin.command: powershell.exe -NoProfile -Command "exit 0"
+  register: ps_interop
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
 - name: Configure Windows PowerShell ExecutionPolicy
   ansible.builtin.shell: |
     Set-ExecutionPolicy RemoteSigned -Force -Scope CurrentUser
@@ -8,3 +18,9 @@
   changed_when: ps_exec_result.stdout != 'True'
   args:
     executable: powershell.exe
+  when: ps_interop.rc | default(1) == 0
+
+- name: Skip Windows PowerShell ExecutionPolicy
+  ansible.builtin.debug:
+    msg: "Windows interop unavailable (powershell.exe cannot be executed) - skipping ExecutionPolicy configuration."
+  when: ps_interop.rc | default(1) != 0
