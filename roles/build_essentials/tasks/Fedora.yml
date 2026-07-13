@@ -1,0 +1,12 @@
+---
+- name: "Build essentials | {{ ansible_facts['distribution'] }} | Install packages"
+  ansible.builtin.dnf:
+    name:
+      - gcc
+      - gcc-c++
+      - make
+      - libtool
+      - pkgconf-pkg-config
+    state: present
+  become: true
+  when: can_install_packages | default(false)
