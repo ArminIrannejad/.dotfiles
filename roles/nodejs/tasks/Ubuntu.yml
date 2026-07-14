@@ -3,8 +3,26 @@
   ansible.builtin.apt:
     name:
       - nodejs
-      - npm
     state: present
     update_cache: true
   become: true
   when: can_install_packages | default(false)
+
+# Some nodejs builds (e.g. NodeSource) bundle npm and `Provides: npm`, but
+# naming npm explicitly makes apt ignore that and pull Ubuntu's separate
+# universe npm package instead, which drags in a large, often-broken tree of
+# node-* dependencies. Only install it if npm isn't already on the system.
+- name: "Nodejs | {{ ansible_facts['distribution'] }} | Check npm availability"
+  ansible.builtin.command: npm --version
+  register: nodejs_npm_check
+  changed_when: false
+  failed_when: false
+
+- name: "Nodejs | {{ ansible_facts['distribution'] }} | Install npm package"
+  ansible.builtin.apt:
+    name: npm
+    state: present
+  become: true
+  when:
+    - can_install_packages | default(false)
+    - nodejs_npm_check.rc != 0

@@ -17,5 +17,5 @@
   ansible.builtin.debug:
     msg: "Optional packages unavailable on this release, skipped: {{ zoxide_unavailable | join(', ') }}"
   vars:
-    zoxide_unavailable: "{{ zoxide_optional.results | default([]) | selectattr('failed') | map(attribute='item') | list }}"
+    zoxide_unavailable: "{{ zoxide_optional.results | default([]) | selectattr('failed', 'defined') | selectattr('failed') | map(attribute='item') | list }}"
   when: zoxide_unavailable | length > 0

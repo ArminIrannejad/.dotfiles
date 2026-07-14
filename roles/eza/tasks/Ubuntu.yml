@@ -17,5 +17,5 @@
   ansible.builtin.debug:
     msg: "Optional packages unavailable on this release, skipped: {{ eza_unavailable | join(', ') }}"
   vars:
-    eza_unavailable: "{{ eza_optional.results | default([]) | selectattr('failed') | map(attribute='item') | list }}"
+    eza_unavailable: "{{ eza_optional.results | default([]) | selectattr('failed', 'defined') | selectattr('failed') | map(attribute='item') | list }}"
   when: eza_unavailable | length > 0
