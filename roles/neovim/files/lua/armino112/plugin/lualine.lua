@@ -84,7 +84,10 @@ local function section_bg()
   local normal = hl_color("Normal", "bg")
   local status = hl_color("StatusLine", "bg")
   if status and status ~= normal then
-    return status
+    local _, status_s = rgb_to_hsl(status)
+    if status_s <= 0.4 then
+      return status
+    end
   end
   if not normal then
     return status
