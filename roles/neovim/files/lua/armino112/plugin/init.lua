@@ -18,6 +18,7 @@ local plugins = {
   "org",
   "showkeys",
   "snacks",
+  "tarminal",
   "treesitter",
   "trouble",
   "vimbegood",

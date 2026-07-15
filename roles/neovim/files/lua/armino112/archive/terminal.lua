@@ -15,7 +15,7 @@ local uv = vim.uv or vim.loop
 ---@field shell string
 ---@field follow_run terminal.Follow
 ---@field follow_repl terminal.Follow
----@field park_on_error boolean park the cursor on the first error after a run
+---@field park_on_error boolean after a run, highlight error locations and park the cursor on the first one
 ---@field cell_marker string line that delimits REPL cells
 ---@field runners table<string, string> filetype -> command that runs a file
 ---@field repls table<string, string> filetype -> interactive REPL command
@@ -48,6 +48,9 @@ M.config = {
     send_selection = "<leader>ri",
     send_cell = "<leader>rc",
     jump_to_error = "<CR>",
+    next_error = "]e",
+    prev_error = "[e",
+    errors_to_quickfix = "<C-q>",
   },
 }
 
@@ -181,15 +184,21 @@ end
 ---@param line string
 ---@param term_buf integer
 ---@return string|nil file, integer|nil lnum, integer|nil col
+---@return integer|nil span_s, integer|nil span_e 1-based inclusive byte range of the match in `line`
 local function parse_error_line(line, term_buf)
-  local file, lnum = line:match('File "([^"]+)", line (%d+)')
+  local s, e, file, lnum = line:find('File "([^"]+)", line (%d+)')
   if file then
     local path = resolve_file(file, term_buf)
-    if path then return path, tonumber(lnum), nil end
+    if path then return path, tonumber(lnum), nil, s, e end
   end
-  for f, l, c in line:gmatch("([^%s:'\"()]+):(%d+):?(%d*)") do
+  local init = 1
+  while true do
+    local f, l, c
+    s, e, f, l, c = line:find("([^%s:'\"()]+):(%d+):?(%d*)", init)
+    if not s then break end
     local path = resolve_file(f, term_buf)
-    if path then return path, tonumber(l), tonumber(c) end
+    if path then return path, tonumber(l), tonumber(c), s, e end
+    init = e + 1
   end
 end
 
@@ -266,68 +275,202 @@ function M.jump_to_error()
   vim.cmd("normal! zz")
 end
 
-local PARK_INTERVAL = 200
-local PARK_TIMEOUT = 30000
+local WATCH_INTERVAL = 200
+local WATCH_TIMEOUT = 30000
 
---- Watch the terminal for the first error location printed after this run's
---- banner and park the cursor on it, so a single <CR> jumps to it. Output
---- arrives async (and `clear` rewrites the screen rather than appending), so
---- this polls for the banner token and gives up quietly if nothing errors.
+local ns = vim.api.nvim_create_namespace("terminal.errors")
+
+--- Highlight a span of a logical line (1-based inclusive byte range) across
+--- the physical lines it wraps over.
+---@param term_buf integer
+---@param lines string[]
+---@param first_row integer physical row the logical line starts on
+---@param last_row integer physical row it ends on
+---@param span_s integer
+---@param span_e integer
+local function highlight_span(term_buf, lines, first_row, last_row, span_s, span_e)
+  local off = 0
+  for row = first_row, last_row do
+    local len = #lines[row]
+    local cs = math.max(span_s - off, 1)
+    local ce = math.min(span_e - off, len)
+    if cs <= ce then
+      vim.api.nvim_buf_set_extmark(term_buf, ns, row - 1, cs - 1, {
+        end_col = ce,
+        hl_group = "TerminalError",
+        strict = false,
+      })
+    end
+    off = off + len
+  end
+end
+
+--- Row of the last printed run banner. The echoed command contains the
+--- banner token too (and survives in scrollback), so only accept lines that
+--- actually start with the banner ruler.
+---@param lines string[]
+---@param banner_token string
+---@return integer|nil row
+local function find_banner_row(lines, banner_token)
+  for i = #lines, 1, -1 do
+    if lines[i]:match("^=====") and lines[i]:find(banner_token, 1, true) then
+      return i
+    end
+  end
+end
+
+--- Watch the terminal output printed after this run's banner: pin the window
+--- view so the banner starts at the top, highlight every error location and
+--- park the cursor on the first one, so a single <CR> jumps to it. Output
+--- arrives async, so this polls for the banner token and gives up quietly
+--- after a while.
 ---@param term_buf integer
 ---@param banner_token string unique marker this run prints before its output
-local function park_cursor_on_error(term_buf, banner_token)
-  if M._park_timer then
-    M._park_timer:stop()
-    M._park_timer:close()
-    M._park_timer = nil
+local function watch_run_errors(term_buf, banner_token)
+  if M._watch_timer then
+    M._watch_timer:stop()
+    M._watch_timer:close()
+    M._watch_timer = nil
   end
 
   local elapsed = 0
+  local pinned = false
+  local parked = false
+  local last_tick = 0
   local timer = uv.new_timer()
-  M._park_timer = timer
+  M._watch_timer = timer
 
   local function stop()
     timer:stop()
     timer:close()
-    if M._park_timer == timer then M._park_timer = nil end
+    if M._watch_timer == timer then M._watch_timer = nil end
   end
 
-  timer:start(PARK_INTERVAL, PARK_INTERVAL, vim.schedule_wrap(function()
+  timer:start(WATCH_INTERVAL, WATCH_INTERVAL, vim.schedule_wrap(function()
     if timer:is_closing() then return end
-    elapsed = elapsed + PARK_INTERVAL
-    if elapsed > PARK_TIMEOUT or not vim.api.nvim_buf_is_valid(term_buf) then
+    elapsed = elapsed + WATCH_INTERVAL
+    if elapsed > WATCH_TIMEOUT or not vim.api.nvim_buf_is_valid(term_buf) then
       stop()
       return
     end
 
+    -- nothing new since the last scan
+    local tick = vim.api.nvim_buf_get_changedtick(term_buf)
+    if tick == last_tick then return end
+    last_tick = tick
+
     local lines = vim.api.nvim_buf_get_lines(term_buf, 0, -1, false)
-    local banner_row
-    for i = #lines, 1, -1 do
-      if lines[i]:find(banner_token, 1, true) then
-        banner_row = i
-        break
-      end
-    end
+    local banner_row = find_banner_row(lines, banner_token)
     if not banner_row then return end
 
+    local win = find_win_for_buf(term_buf)
+    -- don't steal the cursor while typing in the terminal
+    local typing = win == vim.api.nvim_get_current_win()
+      and vim.api.nvim_get_mode().mode:sub(1, 1) == "t"
+
+    if not pinned then
+      pinned = true
+      if win and not typing then
+        vim.api.nvim_win_call(win, function()
+          vim.fn.winrestview({ topline = banner_row, lnum = banner_row, col = 0 })
+        end)
+      end
+    end
+
+    vim.api.nvim_buf_clear_namespace(term_buf, ns, banner_row, -1)
     local width = pty_width(term_buf)
     local i = banner_row + 1
     while i <= #lines do
       local logical, first, last = logical_line_at(lines, i, width)
-      if parse_error_line(logical, term_buf) then
-        local win = find_win_for_buf(term_buf)
-        -- don't steal the cursor while typing in the terminal
-        local typing = win == vim.api.nvim_get_current_win()
-          and vim.api.nvim_get_mode().mode:sub(1, 1) == "t"
-        if win and not typing then
-          vim.api.nvim_win_set_cursor(win, { math.max(first, banner_row + 1), 0 })
+      local file, _, _, span_s, span_e = parse_error_line(logical, term_buf)
+      if file then
+        highlight_span(term_buf, lines, first, last, span_s, span_e)
+        if not parked then
+          parked = true
+          if win and not typing then
+            vim.api.nvim_win_set_cursor(win, { math.max(first, banner_row + 1), 0 })
+          end
         end
-        stop()
-        return
       end
       i = last + 1
     end
   end))
+end
+
+---@param dir integer 1 (down) or -1 (up)
+local function goto_error(dir)
+  local term_buf = vim.api.nvim_get_current_buf()
+  local lines = vim.api.nvim_buf_get_lines(term_buf, 0, -1, false)
+  local width = pty_width(term_buf)
+  local row = vim.api.nvim_win_get_cursor(0)[1]
+
+  local _, cur_first, cur_last = logical_line_at(lines, row, width)
+  local i = dir > 0 and cur_last + 1 or cur_first - 1
+  while i >= 1 and i <= #lines do
+    local logical, first, last = logical_line_at(lines, i, width)
+    if parse_error_line(logical, term_buf) then
+      vim.api.nvim_win_set_cursor(0, { first, 0 })
+      return
+    end
+    i = dir > 0 and last + 1 or first - 1
+  end
+  vim.notify("No more error locations", vim.log.levels.WARN)
+end
+
+--- Move the cursor to the next error location in the terminal.
+function M.next_error()
+  goto_error(1)
+end
+
+--- Move the cursor to the previous error location in the terminal.
+function M.prev_error()
+  goto_error(-1)
+end
+
+--- Collect the error locations from the last run (or the whole scrollback if
+--- this terminal never ran anything) into the quickfix list, close the
+--- terminal window and open quickfix.
+function M.errors_to_quickfix()
+  local term_buf = vim.api.nvim_get_current_buf()
+  local lines = vim.api.nvim_buf_get_lines(term_buf, 0, -1, false)
+  local width = pty_width(term_buf)
+
+  local start_row = 1
+  local banner = vim.b[term_buf].run_banner
+  if banner then
+    local banner_row = find_banner_row(lines, banner)
+    if banner_row then
+      start_row = banner_row + 1
+    end
+  end
+
+  local items = {}
+  local i = start_row
+  while i <= #lines do
+    local logical, _, last = logical_line_at(lines, i, width)
+    local file, lnum, col = parse_error_line(logical, term_buf)
+    if file then
+      items[#items + 1] = {
+        filename = file,
+        lnum = lnum,
+        col = col or 1,
+        text = vim.trim(logical),
+      }
+    end
+    i = last + 1
+  end
+
+  if #items == 0 then
+    vim.notify("No error locations in terminal output", vim.log.levels.WARN)
+    return
+  end
+
+  vim.fn.setqflist({}, " ", { title = "terminal errors", items = items })
+  local win = find_win_for_buf(term_buf)
+  if win then
+    pcall(vim.api.nvim_win_close, win, false)
+  end
+  vim.cmd("botright copen")
 end
 
 -- ============================================================================
@@ -356,17 +499,33 @@ function M.toggle()
   end
 end
 
---- Save and run the current file in the shared shell terminal.
+--- Save and run the current file in the shared shell terminal. When invoked
+--- from the terminal itself (or any non-file buffer), re-run the last run.
 function M.run()
-  vim.cmd("w")
+  local ctx
+  if vim.bo.buftype == "" then
+    vim.cmd("w")
+    local file = vim.fn.expand("%:p")
+    ctx = {
+      file = file,
+      stem = vim.fn.expand("%:t:r"),
+      dir = vim.fn.fnamemodify(file, ":h"),
+      ft = vim.bo.filetype,
+    }
+    M._last_run = ctx
+  else
+    ctx = M._last_run
+    if not ctx then
+      vim.notify("Nothing to run from here", vim.log.levels.WARN)
+      return
+    end
+  end
 
-  local file = vim.fn.expand("%:p")
-  local stem = vim.fn.expand("%:t:r")
-  local dir = vim.fn.fnamemodify(file, ":h")
-  local file_escaped = vim.fn.shellescape(file)
-  local stem_escaped = vim.fn.shellescape(stem)
+  local dir = ctx.dir
+  local file_escaped = vim.fn.shellescape(ctx.file)
+  local stem_escaped = vim.fn.shellescape(ctx.stem)
 
-  local ft = vim.bo.filetype
+  local ft = ctx.ft
   local exe = M.config.runners[ft]
   if not exe then
     vim.notify("No runner configured for filetype: " .. ft, vim.log.levels.WARN)
@@ -402,18 +561,23 @@ function M.run()
   M._run_id = (M._run_id or 0) + 1
   local banner = ("RUN[%d]"):format(M._run_id)
 
+  -- Push the whole screen into scrollback instead of erasing it (what
+  -- `clear` did), so previous runs stay scrollable; the watcher pins the
+  -- window view to this run's banner so it still starts at the top.
+  local scroll = vim.api.nvim_win_get_height(term_win)
   local cmd = table.concat({
     "cd " .. vim.fn.shellescape(dir),
-    "clear",
+    ("printf '\\033[%dS\\033[H'"):format(scroll),
     "printf '\\n===== " .. banner .. ": %s =====\\n' \"$(date '+%H:%M:%S')\"",
     runner_cmd,
   }, " && ") .. "\n"
 
   if M.config.park_on_error then
-    park_cursor_on_error(term_buf, banner)
+    watch_run_errors(term_buf, banner)
   end
   term_send(term_buf, cmd)
   vim.b[term_buf].term_cwd = dir
+  vim.b[term_buf].run_banner = banner
 
   focus_after_send(term_win, code_win, M.config.follow_run)
 end
@@ -553,20 +717,38 @@ end
 -- Setup
 -- ============================================================================
 
+--- Bold red for error locations, taking the red from the active colorscheme.
+local function define_error_highlight()
+  local diag = vim.api.nvim_get_hl(0, { name = "DiagnosticError", link = false })
+  vim.api.nvim_set_hl(0, "TerminalError", { fg = diag.fg or "Red", bold = true })
+end
+
 ---@param opts terminal.Config|nil merged over the defaults in M.config
 function M.setup(opts)
   M.config = vim.tbl_deep_extend("force", M.config, opts or {})
   local keys = M.config.keymaps
+  local group = vim.api.nvim_create_augroup("custom-term-open", { clear = true })
+
+  define_error_highlight()
+  vim.api.nvim_create_autocmd("ColorScheme", {
+    group = group,
+    callback = define_error_highlight,
+  })
 
   vim.api.nvim_create_autocmd("TermOpen", {
-    group = vim.api.nvim_create_augroup("custom-term-open", { clear = true }),
+    group = group,
     callback = function(ev)
       vim.opt_local.number = false
       vim.opt_local.relativenumber = false
       vim.opt_local.scrolloff = 0
       vim.bo.filetype = "terminal"
-      vim.keymap.set("n", keys.jump_to_error, M.jump_to_error,
-        { buffer = ev.buf, desc = "Jump to file location under cursor" })
+      local function map(lhs, rhs, desc)
+        vim.keymap.set("n", lhs, rhs, { buffer = ev.buf, desc = desc })
+      end
+      map(keys.jump_to_error, M.jump_to_error, "Jump to file location under cursor")
+      map(keys.next_error, M.next_error, "Next error location")
+      map(keys.prev_error, M.prev_error, "Previous error location")
+      map(keys.errors_to_quickfix, M.errors_to_quickfix, "Send errors to quickfix")
     end,
   })
 

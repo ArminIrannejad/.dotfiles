@@ -108,6 +108,7 @@ require("mason-lspconfig").setup({
     "lua_ls",
     "basedpyright",
     "ruff",
+    "gopls",
     "tflint",
   },
   automatic_enable = {
