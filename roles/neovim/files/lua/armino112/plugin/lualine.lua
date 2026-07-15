@@ -54,12 +54,12 @@ local function hsl_to_rgb(h, s, l)
   return string.format("#%02x%02x%02x", channel(r), channel(g), channel(b))
 end
 
-local mode_hue_shift = {
-  normal = 0,
-  insert = 14,
-  visual = -16,
-  command = 28,
-  replace = -30,
+local mode_hue = {
+  normal = 205,
+  insert = 140,
+  visual = 278,
+  command = 45,
+  replace = 0,
 }
 
 local function apply_mode_palette(palette)
@@ -67,11 +67,13 @@ local function apply_mode_palette(palette)
   if type(base) ~= "string" or base:sub(1, 1) ~= "#" then
     return
   end
-  local h, s, l = rgb_to_hsl(base)
-  for name, shift in pairs(mode_hue_shift) do
+  local _, s, l = rgb_to_hsl(base)
+  s = math.min(math.max(s, 0.55), 0.9)
+  l = math.min(math.max(l, 0.6), 0.78)
+  for name, hue in pairs(mode_hue) do
     local mode = palette[name]
     if mode and mode.a then
-      local color = hsl_to_rgb((h + shift / 360) % 1, s, l)
+      local color = hsl_to_rgb(hue / 360, s, l)
       mode.a.bg = color
       if mode.b then mode.b.fg = color end
     end
