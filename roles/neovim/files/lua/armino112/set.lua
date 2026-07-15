@@ -1,4 +1,4 @@
-vim.opt.guicursor = "n-v-c-sm:block-Cursor,i-ci-ve:ver25-Cursor,r-cr-o:hor20-Cursor"
+vim.opt.guicursor = "a:block-Cursor"
 vim.opt.winborder = "rounded"
 vim.opt.nu = true
 vim.opt.relativenumber = true
