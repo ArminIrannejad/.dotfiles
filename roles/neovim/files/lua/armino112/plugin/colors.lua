@@ -123,7 +123,32 @@ require("everblush").setup({})
 
 require("midnight").setup({})
 
-require("ayu").setup({})
+local transparent = false
+local transparent_groups = {
+  "Normal",
+  "NormalFloat",
+  "SignColumn",
+  "FoldColumn",
+  "Folded",
+  "WinSeparator",
+  "StatusLine",
+  "StatusLineNC",
+  "TabLine",
+  "TabLineFill",
+  "TabLineSel",
+}
+
+require("ayu").setup({
+  mirage = false,
+  overrides = function()
+    local colors = require("ayu.colors")
+    return {
+      CursorLineNr = { fg = colors.accent, bg = "NONE", bold = true },
+      CursorLineConceal = { fg = colors.guide_normal, bg = "NONE" },
+      Comment = { fg = colors.comment, italic = false },
+    }
+  end,
+})
 
 require("neofusion").setup({
   italic = {
@@ -147,23 +172,41 @@ require("tokyonight").setup({
 })
 
 
-vim.cmd.colorscheme("gruber-darker")
--- vim.cmd([[
---   highlight Normal guibg=NONE ctermbg=NONE
---   highlight NormalNC guibg=NONE ctermbg=NONE
---   highlight EndOfBuffer guibg=NONE ctermbg=NONE
--- ]])
+vim.api.nvim_create_autocmd("ColorScheme", {
+  group = vim.api.nvim_create_augroup("user_highlights", { clear = true }),
+  callback = function()
+    vim.api.nvim_set_hl(0, "MiniJump", {
+      sp = "#cc241d",
+      underline = true,
+      nocombine = true,
+    })
 
--- vim.api.nvim_set_hl(0, "MiniJump", {
---   fg = "#ffffff",
---   bg = "#ff0000",
---   bold = true,
---   nocombine = true,
--- })
+    vim.api.nvim_set_hl(0, "Cursor", { fg = "#000000", bg = "#ffff00" })
+    vim.api.nvim_set_hl(0, "lCursor", { fg = "#000000", bg = "#ffff00" })
 
-vim.api.nvim_set_hl(0, "MiniJump", {
-  sp = "#cc241d",
-  -- undercurl = true,
-  underline = true,
-  nocombine = true,
+    if transparent then
+      for _, group in ipairs(transparent_groups) do
+        local hl = vim.api.nvim_get_hl(0, { name = group, link = false })
+        hl.bg = "NONE"
+        vim.api.nvim_set_hl(0, group, hl)
+      end
+    end
+  end,
 })
+
+vim.cmd.colorscheme("ayu-dark")
+
+vim.keymap.set("n", "<leader>tt", function()
+  transparent = not transparent
+  vim.cmd.colorscheme(vim.g.colors_name)
+  vim.notify("Transparency " .. (transparent and "on" or "off"))
+end, { desc = "Toggle transparent background" })
+
+local function toggle_transparent_status()
+  vim.g.transparent_status = not vim.g.transparent_status
+  vim.cmd.colorscheme(vim.g.colors_name)
+  vim.notify("Statusbar transparency " .. (vim.g.transparent_status and "on" or "off"))
+end
+
+vim.api.nvim_create_user_command("TransparentStatus", toggle_transparent_status, {})
+vim.keymap.set("n", "<leader>tT", toggle_transparent_status, { desc = "Toggle transparent statusbar" })

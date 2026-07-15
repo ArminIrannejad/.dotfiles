@@ -5,6 +5,8 @@
 *.tgz
 .DS_Store
 
+nvim-pack-lock.json
+
 # Compiled Code and Build Artifacts
 __pycache__/
 dist/
