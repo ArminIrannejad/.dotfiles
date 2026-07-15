@@ -75,6 +75,7 @@ local function apply_mode_palette(palette)
     if mode and mode.a then
       local color = hsl_to_rgb(hue / 360, s, l)
       mode.a.bg = color
+      mode.a.fg = hsl_to_rgb(hue / 360, s, 0.18)
       if mode.b then mode.b.fg = color end
     end
   end
