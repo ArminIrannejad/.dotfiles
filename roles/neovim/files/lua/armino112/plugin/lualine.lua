@@ -62,6 +62,8 @@ local mode_hue = {
   replace = 0,
 }
 
+local mode_text_lightness = 0.12
+
 local function apply_mode_palette(palette)
   local base = palette.normal and palette.normal.a and palette.normal.a.bg
   if type(base) ~= "string" or base:sub(1, 1) ~= "#" then
@@ -75,7 +77,7 @@ local function apply_mode_palette(palette)
     if mode and mode.a then
       local color = hsl_to_rgb(hue / 360, s, l)
       mode.a.bg = color
-      mode.a.fg = hsl_to_rgb(hue / 360, s, 0.18)
+      mode.a.fg = hsl_to_rgb(hue / 360, s, mode_text_lightness)
       if mode.b then mode.b.fg = color end
     end
   end
