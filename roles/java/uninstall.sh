@@ -5,7 +5,7 @@ if [ -f /etc/os-release ]; then
   . /etc/os-release
   case "$ID" in
     fedora)
-      for pkg in java-25-openjdk; do
+      for pkg in java-25-openjdk-devel java-25-openjdk; do
         if rpm -q "$pkg" >/dev/null 2>&1; then
           __task "Removing $pkg via dnf"
           _cmd "sudo dnf remove -y $pkg"

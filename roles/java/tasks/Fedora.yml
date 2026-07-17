@@ -1,7 +1,7 @@
 ---
 - name: "Java | {{ ansible_facts['distribution'] }} | Install packages"
   ansible.builtin.dnf:
-    name: java-25-openjdk
+    name: java-25-openjdk-devel
     state: present
   become: true
   when: can_install_packages | default(false)
