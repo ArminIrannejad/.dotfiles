@@ -1,5 +1,9 @@
 vim.pack.add({ "https://github.com/ArminIrannejad/tarminal.nvim" })
-require("tarminal").setup()
+require("tarminal").setup({
+  runners = {
+    scala = "scala run",
+  },
+})
 
 vim.keymap.set("n", "<leader>ts", function() require("tarminal").toggle() end, { desc = "Toggle shell terminal" })
 vim.keymap.set("n", "<leader>ru", function() require("tarminal").run() end, { desc = "Run current file in terminal" })
