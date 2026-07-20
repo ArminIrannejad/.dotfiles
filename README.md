@@ -5,6 +5,15 @@ Install:
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/ArminIrannejad/.dotfiles/master/bin/dotfiles)"
 ```
 
+Install specific roles only:
+```bash
+# Neovim only 
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/ArminIrannejad/.dotfiles/master/bin/dotfiles)" -- -t neovim
+
+# Neovim and tmux
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/ArminIrannejad/.dotfiles/master/bin/dotfiles)" -- -t neovim,tmux
+```
+
 
 Common examples:
 ```bash
