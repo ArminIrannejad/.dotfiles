@@ -16,6 +16,7 @@ local plugins = {
   "multicursor",
   "oil",
   "org",
+  "render-md",
   "showkeys",
   "snacks",
   "tarminal",
