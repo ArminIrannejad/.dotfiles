@@ -1,0 +1,5 @@
+---
+- name: "Fd | MacOSX | Install fd"
+  community.general.homebrew:
+    name: fd
+    state: present

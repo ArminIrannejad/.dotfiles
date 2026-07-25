@@ -1,0 +1,5 @@
+---
+- name: "Fastfetch | MacOSX | Install fastfetch"
+  community.general.homebrew:
+    name: fastfetch
+    state: present

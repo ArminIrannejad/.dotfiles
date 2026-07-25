@@ -1,0 +1,5 @@
+---
+- name: "Jq | MacOSX | Install jq"
+  community.general.homebrew:
+    name: jq
+    state: present
