@@ -1,0 +1,5 @@
+---
+- name: "System | MacOSX | Update Homebrew"
+  community.general.homebrew:
+    update_homebrew: true
+  when: system_update_packages | default(false)
