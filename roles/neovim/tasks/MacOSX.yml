@@ -1,0 +1,17 @@
+---
+- name: "Neovim | MacOSX | Install dependencies"
+  community.general.homebrew:
+    name:
+      - cmake
+      - curl
+      - pkg-config
+      - libtool
+      - tree-sitter-cli
+      - unzip
+      - ripgrep
+    state: present
+
+- name: "Neovim | MacOSX | Install Neovim"
+  community.general.homebrew:
+    name: neovim
+    state: present
