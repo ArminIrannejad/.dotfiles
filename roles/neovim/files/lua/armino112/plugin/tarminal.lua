@@ -5,22 +5,21 @@ require("tarminal").setup({
   },
 })
 
-vim.keymap.set("n", "<leader>ts", function() require("tarminal").toggle() end, { desc = "Toggle shell terminal" })
-vim.keymap.set("n", "<leader>ru", function() require("tarminal").run() end, { desc = "Run current file in terminal" })
-vim.keymap.set("x", "<leader>ri", function() require("tarminal").send_selection() end, { desc = "Send selection to REPL" })
-vim.keymap.set("n", "<leader>rc", function() require("tarminal").send_cell() end, { desc = "Send cell to REPL" })
+local tarminal = require("tarminal")
+
+vim.keymap.set("n", "<leader>ts", tarminal.toggle, { desc = "Toggle terminal" })
+vim.keymap.set("n", "<leader>ru", tarminal.run, { desc = "Run current file" })
+vim.keymap.set("n", "<leader>re", tarminal.exec, { desc = "Run command" })
+vim.keymap.set("x", "<leader>ri", tarminal.send_selection, { desc = "Send selection to REPL" })
+vim.keymap.set("n", "<leader>rc", tarminal.send_cell, { desc = "Send cell to REPL" })
 
 vim.api.nvim_create_autocmd("FileType", {
   pattern = "tarminal",
-  callback = function(ev)
-    local t = require("tarminal")
-    local function map(mode, lhs, rhs, desc)
-      vim.keymap.set(mode, lhs, rhs, { buffer = ev.buf, desc = desc })
-    end
-    map("t", "<Esc><Esc>", [[<C-\><C-n>]], "Exit terminal mode")
-    map("n", "<CR>", t.jump_to_error, "Jump to file location on this line")
-    map("n", "]e", t.next_error, "Next error location")
-    map("n", "[e", t.prev_error, "Previous error location")
-    map("n", "<C-q>", t.errors_to_quickfix, "Errors to quickfix")
+  callback = function(args)
+    vim.keymap.set("t", "<Esc><Esc>", [[<C-\><C-n>]], { buffer = args.buf })
+    vim.keymap.set("n", "<CR>", tarminal.jump_to_error, { buffer = args.buf })
+    vim.keymap.set("n", "]e", tarminal.next_error, { buffer = args.buf })
+    vim.keymap.set("n", "[e", tarminal.prev_error, { buffer = args.buf })
+    vim.keymap.set("n", "<C-q>", tarminal.errors_to_quickfix, { buffer = args.buf })
   end,
 })
