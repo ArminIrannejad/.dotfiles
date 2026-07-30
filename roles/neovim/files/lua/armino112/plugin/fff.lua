@@ -28,6 +28,9 @@ vim.keymap.set('n', '<leader>en', function()
   require('fff').find_files_in_dir(vim.fn.stdpath('config'))
 end, { desc = 'Find Neovim config files' })
 
+vim.keymap.set('n', '<leader>ec', function()
+  require('fff').find_files_in_dir("~/.dotfiles/")
+end, { desc = 'Find config files' })
 
 -- require('fff').find_files()                        -- find files in current repo
 -- require('fff').live_grep()                         -- live content grep
