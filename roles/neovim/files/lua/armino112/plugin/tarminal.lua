@@ -1,5 +1,8 @@
 vim.pack.add({ "https://github.com/ArminIrannejad/tarminal.nvim" })
 require("tarminal").setup({
+  time_runs = true,
+  clear_run = true,
+  banner = true,
   runners = {
     scala = "scala run",
   },
