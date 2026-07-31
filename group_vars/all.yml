@@ -14,6 +14,7 @@ default_roles:
   - fastfetch
   - fd
   - fzf
+  - gh
   - git
   # - gitleaks
   - go

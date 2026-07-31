@@ -1,0 +1,46 @@
+---
+# The Ubuntu archive lags well behind gh releases, so use GitHub's own repo.
+
+- name: "Gh | {{ ansible_facts['distribution'] }} | Create keyring directory"
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  become: true
+  when: can_install_packages | default(false)
+
+- name: "Gh | {{ ansible_facts['distribution'] }} | Install repository key"
+  ansible.builtin.get_url:
+    url: https://cli.github.com/packages/githubcli-archive-keyring.gpg
+    dest: /etc/apt/keyrings/githubcli-archive-keyring.gpg
+    owner: root
+    group: root
+    mode: "0644"
+  become: true
+  when: can_install_packages | default(false)
+
+- name: "Gh | {{ ansible_facts['distribution'] }} | Configure GitHub CLI repository"
+  ansible.builtin.apt_repository:
+    repo: >-
+      deb [arch={{ 'arm64' if ansible_facts['machine'] == 'aarch64' else 'amd64' }}
+      signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg]
+      https://cli.github.com/packages stable main
+    filename: github-cli
+    state: present
+  become: true
+  when: can_install_packages | default(false)
+
+- name: "Gh | {{ ansible_facts['distribution'] }} | Install packages"
+  ansible.builtin.apt:
+    name: gh
+    state: present
+    update_cache: true
+  become: true
+  when: can_install_packages | default(false)
+
+- name: "Gh | {{ ansible_facts['distribution'] }} | Package installation skipped"
+  ansible.builtin.debug:
+    msg: "GitHub CLI installation skipped because sudo is unavailable."
+  when: not (can_install_packages | default(false))

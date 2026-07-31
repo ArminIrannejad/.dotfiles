@@ -1,0 +1,12 @@
+---
+- name: "Gh | {{ ansible_facts['distribution'] }} | Install packages"
+  ansible.builtin.dnf:
+    name: gh
+    state: present
+  become: true
+  when: can_install_packages | default(false)
+
+- name: "Gh | {{ ansible_facts['distribution'] }} | Package installation skipped"
+  ansible.builtin.debug:
+    msg: "GitHub CLI installation skipped because sudo is unavailable."
+  when: not (can_install_packages | default(false))
