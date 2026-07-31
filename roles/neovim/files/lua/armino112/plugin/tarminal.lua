@@ -3,6 +3,7 @@ require("tarminal").setup({
   time_runs = true,
   clear_run = true,
   banner = true,
+  follow_run = "focus",
   runners = {
     scala = "scala run",
   },
