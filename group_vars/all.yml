@@ -32,6 +32,7 @@ default_roles:
   - terraform
   - tmux
   - tree
+  - tuicr
   - unzip
   - uv
   - python_dev

@@ -1,0 +1,25 @@
+---
+# tuicr ships no distro packages, so use the upstream script. It drops a static
+# binary into TUICR_INSTALL_DIR, so no sudo is needed.
+
+- name: "Tuicr | {{ ansible_facts['distribution'] }} | Check if tuicr is installed"
+  ansible.builtin.command:
+    cmd: tuicr --version
+  register: tuicr_installed
+  changed_when: false
+  failed_when: false
+
+- name: "Tuicr | {{ ansible_facts['distribution'] }} | Ensure bin directory exists"
+  ansible.builtin.file:
+    path: "{{ bin_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: "Tuicr | {{ ansible_facts['distribution'] }} | Install tuicr to user bin"
+  ansible.builtin.shell:
+    cmd: curl -fsSL https://tuicr.dev/install.sh | sh
+  environment:
+    TUICR_INSTALL_DIR: "{{ bin_dir }}"
+  args:
+    creates: "{{ bin_dir }}/tuicr"
+  when: tuicr_installed.rc != 0

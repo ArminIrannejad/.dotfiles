@@ -1,0 +1,10 @@
+---
+- name: "Tuicr | MacOSX | Tap agavra/tap"
+  community.general.homebrew_tap:
+    name: agavra/tap
+    state: present
+
+- name: "Tuicr | MacOSX | Install tuicr"
+  community.general.homebrew:
+    name: tuicr
+    state: present
