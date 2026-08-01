@@ -48,6 +48,7 @@ vim.api.nvim_create_autocmd("FileType", {
 require("nvim-treesitter").install({
   "bash",
   "c",
+  "comment",
   "haskell",
   "json",
   "lua",
