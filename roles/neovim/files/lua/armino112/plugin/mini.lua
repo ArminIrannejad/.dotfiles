@@ -9,6 +9,15 @@ require("mini.surround").setup({})
 require("mini.jump").setup({})
 require("mini.ai").setup({})
 
+local jump = MiniJump.jump
+MiniJump.jump = function(...)
+  local ic, sc = vim.o.ignorecase, vim.o.smartcase
+  vim.o.ignorecase, vim.o.smartcase = false, false
+  local ok, err = pcall(jump, ...)
+  vim.o.ignorecase, vim.o.smartcase = ic, sc
+  if not ok then error(err) end
+end
+
 vim.keymap.set({ "n", "x", "o" }, ",", function()
   local backward = MiniJump.state.backward
   MiniJump.jump(nil, not backward)
