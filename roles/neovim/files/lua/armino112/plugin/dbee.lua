@@ -84,6 +84,27 @@ dbee.setup({
   },
 })
 
+-- upstream paints a winbar over the result tile; the page counter lives in the
+-- statusline area we already read, so drop the extra strip
+pcall(function()
+  local result = require("dbee.ui.result")
+
+  local function hide_winbar(self)
+    if self.winid and vim.api.nvim_win_is_valid(self.winid) then
+      vim.api.nvim_set_option_value("winbar", "", { win = self.winid })
+    end
+  end
+
+  result.set_default_result_window = hide_winbar
+
+  local display_result = result.display_result
+  result.display_result = function(self, page)
+    local current = display_result(self, page)
+    hide_winbar(self)
+    return current
+  end
+end)
+
 pcall(function()
   require("cmp-dbee").setup({})
 end)
