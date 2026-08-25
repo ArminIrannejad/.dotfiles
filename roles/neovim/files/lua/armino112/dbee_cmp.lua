@@ -1,10 +1,5 @@
---- Context aware completion for cmp-dbee.
----
---- Upstream offers every schema and table no matter where the cursor is, and
---- only ever resolves columns for the first table in the statement. This
---- replaces its source so column positions (where/select/on/...) suggest
---- columns from every table in scope, and only from/join positions suggest
---- tables. It also teaches the qualifier match about `catalog.schema.table`.
+-- Upstream offers every schema and table wherever the cursor is, and only
+-- resolves columns for the first table in the statement. Replaces its source.
 
 local ok, Source = pcall(require, "cmp-dbee.source")
 if not ok then
@@ -44,7 +39,7 @@ local function cursor_before_line()
   return vim.api.nvim_get_current_line():sub(1, col)
 end
 
---- Current statement up to the cursor, so a previous query's FROM can't leak in.
+-- stops a previous query's FROM leaking in
 local function statement_before_cursor()
   local row = vim.api.nvim_win_get_cursor(0)[1]
   local node = Parser.get_cursor_node()
@@ -55,7 +50,7 @@ local function statement_before_cursor()
   return table.concat(lines, "\n")
 end
 
---- The whole statement, cursor included, for when we have to fall back to text.
+-- whole statement, for the text fallback
 local function statement_text()
   local node = Parser.get_cursor_node()
   if not node then
@@ -65,7 +60,6 @@ local function statement_text()
   return table.concat(vim.api.nvim_buf_get_lines(0, start_row, end_row + 1, false), "\n")
 end
 
---- Whether the cursor sits where a column or a table belongs.
 --- @return "column"|"table"
 local function clause_at_cursor()
   local last
@@ -78,8 +72,7 @@ local function clause_at_cursor()
   return last and TABLE_CLAUSE[last] and "table" or "column"
 end
 
---- Last identifier before a trailing dot, dotted prefix and all, so that
---- `catalog.schema.` resolves to the schema rather than to nothing.
+-- last identifier before a trailing dot, dotted prefix and all
 --- @return string|nil
 local function qualifier_before_cursor()
   local line = cursor_before_line()
@@ -141,7 +134,7 @@ local function cte_items(ctes)
   return items
 end
 
---- Columns of every table in the statement, plus the aliases themselves.
+-- columns of every table in the statement, plus the aliases
 local function complete_columns(refs, callback)
   local items = {}
   for _, ref in ipairs(refs) do
@@ -166,7 +159,7 @@ local function complete_columns(refs, callback)
   end
 end
 
---- Everything a from/join position can take: schemas, their tables, CTEs.
+-- everything a from/join position can take
 local function complete_tables(refs, callback)
   Database.get_db_structure(function(structure)
     structure = structure or {}
@@ -179,10 +172,8 @@ local function complete_tables(refs, callback)
   end)
 end
 
---- Resolve `<qualifier>.`: aliases first since they are unambiguous, then
---- schemas, then a table naming its own columns, and failing all of those
---- treat it as the catalog. Order matters, `catalog.schema.` parses as a table
---- reference and would otherwise be mistaken for one.
+-- alias, then schema, then table, then catalog. Order matters: `catalog.schema.`
+-- parses as a table reference and would otherwise be mistaken for one.
 local function complete_qualified(qualifier, refs, callback)
   local function columns_of(ref)
     Database.get_column_completion(ref.schema, ref.model, function(columns)
@@ -216,9 +207,8 @@ local function complete_qualified(qualifier, refs, callback)
   end)
 end
 
---- Half-typed statements parse into an ERROR node and tree-sitter reports no
---- relations at all, which is exactly when completion is asked for. Recover the
---- table references from the raw text instead.
+-- half-typed statements parse to an ERROR node with no relations at all, which
+-- is exactly when completion is asked for
 local function references_from_text(text)
   local words = {}
   for word in text:gmatch("[%w_%.]+") do

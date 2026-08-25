@@ -19,7 +19,7 @@ local build = function()
     require("dbee").install("go")
   end
 end
--- same chrome on every tile, no gutters to read past
+-- same chrome on every tile
 local window_options = {
   number = false,
   relativenumber = false,
@@ -31,8 +31,7 @@ local window_options = {
   wrap = false,
 }
 
--- two tones instead of the default rainbow: containers read as directories,
--- everything else recedes
+-- two tones instead of the default rainbow
 local function candy(icon, highlight)
   return { icon = icon, icon_highlight = highlight, text_highlight = "" }
 end
