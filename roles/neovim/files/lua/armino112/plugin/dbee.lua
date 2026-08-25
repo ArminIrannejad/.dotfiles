@@ -31,11 +31,6 @@ local window_options = {
   wrap = false,
 }
 
--- two tones instead of the default rainbow
-local function candy(icon, highlight)
-  return { icon = icon, icon_highlight = highlight, text_highlight = "" }
-end
-
 dbee.setup({
   sources = {
     require("dbee.sources").EnvSource:new("DBEE_CONNECTIONS"),
@@ -51,29 +46,6 @@ dbee.setup({
   drawer = {
     disable_help = true,
     window_options = window_options,
-    candies = {
-      connection          = candy("󱘖", "Directory"),
-      database_switch     = candy("", "Directory"),
-      schema              = candy("", "Directory"),
-      table               = candy("", "Comment"),
-      streaming_table     = candy("", "Comment"),
-      managed             = candy("", "Comment"),
-      view                = candy("", "Comment"),
-      materialized_view   = candy("", "Comment"),
-      sink                = candy("", "Comment"),
-      column              = candy("󰠵", "Comment"),
-      history             = candy("", "Comment"),
-      note                = candy("", "Comment"),
-      source              = candy("󰃖", "Comment"),
-      help                = candy("󰋖", "Comment"),
-      add                 = candy("", "String"),
-      edit                = candy("󰏫", "Directory"),
-      remove              = candy("󰆴", "SpellBad"),
-      none                = candy(" ", ""),
-      none_dir            = candy("", "NonText"),
-      node_expanded       = candy("", "NonText"),
-      node_closed         = candy("", "NonText"),
-    },
   },
 
   editor = {
