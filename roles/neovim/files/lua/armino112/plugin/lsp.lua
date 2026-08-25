@@ -71,7 +71,6 @@ require("blink.cmp").setup({
 
     providers = {
       dbee = {
-        -- must match the name cmp-dbee registers with nvim-cmp
         name = "dbee",
         module = "blink.compat.source",
         score_offset = 100,

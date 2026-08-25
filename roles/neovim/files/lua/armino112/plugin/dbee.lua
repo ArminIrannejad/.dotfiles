@@ -2,7 +2,6 @@ vim.pack.add({
   { src = "https://github.com/jsborjesson/vim-uppercase-sql" },
   { src = "https://github.com/MunifTanjim/nui.nvim" },
   { src = "https://github.com/kndndrj/nvim-dbee",            version = "master" },
-  -- cmp-dbee is an nvim-cmp source; blink.compat bridges it (and stubs `cmp`)
   { src = "https://github.com/Saghen/blink.compat",          version = vim.version.range("2.*") },
   { src = "https://github.com/MattiasMTS/cmp-dbee",          version = "ms/v2" },
 })
