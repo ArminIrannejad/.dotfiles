@@ -1,9 +1,13 @@
 vim.pack.add({
   { src = "https://github.com/jsborjesson/vim-uppercase-sql" },
   { src = "https://github.com/MunifTanjim/nui.nvim" },
-  { src = "https://github.com/kndndrj/nvim-dbee",               version = "master" },
-  { src = "https://github.com/Kaiser-Yang/blink-cmp-dictionary" },
+  { src = "https://github.com/kndndrj/nvim-dbee",            version = "master" },
+  -- cmp-dbee is an nvim-cmp source; blink.compat bridges it (and stubs `cmp`)
+  { src = "https://github.com/Saghen/blink.compat",          version = vim.version.range("2.*") },
+  { src = "https://github.com/MattiasMTS/cmp-dbee",          version = "ms/v2" },
 })
+
+require("blink.compat").setup({})
 
 local ok, dbee = pcall(require, "dbee")
 if not ok then
@@ -49,6 +53,10 @@ dbee.setup({
     { key = "<C-c>",      mode = "",  action = "cancel_call" },
   },
 })
+
+pcall(function()
+  require("cmp-dbee").setup({})
+end)
 
 vim.keymap.set("n", "<leader>be", function()
   dbee.toggle()
