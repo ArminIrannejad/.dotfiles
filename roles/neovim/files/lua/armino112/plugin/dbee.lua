@@ -58,6 +58,43 @@ pcall(function()
   require("cmp-dbee").setup({})
 end)
 
+-- cmp-dbee assumes `schema.table`, Databricks is `catalog.schema.table`.
+-- Upstream anchors the schema match on whitespace/paren, so a dotted prefix
+-- never matches and it falls back to listing every table in the catalog.
+pcall(function()
+  local utils = require("cmp-dbee.source.utils")
+
+  -- last identifier before the trailing dot, dotted prefix and all
+  function utils:captured_schema(line)
+    local before = line or self:get_cursor_before_line()
+    local qualified = before:match("[%s%(,]([%w_%.]+)%.$") or before:match("^([%w_%.]+)%.$")
+    if not qualified then
+      return nil
+    end
+    local segments = vim.split(qualified, ".", { plain = true })
+    return segments[#segments]
+  end
+end)
+
+-- dbee's databricks structure is only schema -> table for the current catalog,
+-- so an unknown name is the catalog: answer it with the schema list.
+pcall(function()
+  local database = require("cmp-dbee.database")
+
+  function database.get_models(name, callback)
+    database.get_db_structure(function(structure)
+      structure = structure or {}
+      for _, schema in ipairs(structure) do
+        if schema.name == name then
+          callback(schema.children or {})
+          return
+        end
+      end
+      callback(structure)
+    end)
+  end
+end)
+
 vim.keymap.set("n", "<leader>be", function()
   dbee.toggle()
 end, { silent = true })
