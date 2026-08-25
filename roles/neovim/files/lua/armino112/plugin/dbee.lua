@@ -116,6 +116,23 @@ pcall(function()
   require("cmp-dbee").setup({})
 end)
 
+-- upstream drops the structure cache every 10s, so a keystroke mid-typing pays
+-- for a full information_schema scan. the cache is already busted on connection
+-- and database change, so only DDL made elsewhere goes stale.
+pcall(function()
+  local db = require("cmp-dbee.database")
+  db.cache_expiry_s = 30 * 60
+
+  vim.api.nvim_create_user_command("DbeeCmpRefresh", function()
+    local conn = db.get_current_connection()
+    if not conn then
+      return
+    end
+    db.cache[conn.id] = nil
+    db.column_cache[conn.id] = nil
+  end, { desc = "Drop cached dbee completion metadata" })
+end)
+
 require("armino112.dbee_cmp")
 
 vim.keymap.set("n", "<leader>be", function()
