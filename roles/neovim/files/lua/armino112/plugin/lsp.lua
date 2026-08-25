@@ -6,9 +6,6 @@ vim.pack.add({
   { src = "https://github.com/Saghen/blink.cmp",                 version = vim.version.range("1.*") },
   { src = "https://github.com/L3MON4D3/LuaSnip" },
   { src = "https://github.com/rafamadriz/friendly-snippets" },
-  -- SQL table-name dictionary completion
-  { src = "https://github.com/Kaiser-Yang/blink-cmp-dictionary" },
-
   -- { src = "https://github.com/j-hui/fidget.nvim" },
 })
 
@@ -69,23 +66,15 @@ require("blink.cmp").setup({
     default = { "lsp", "path", "buffer", "snippets" },
 
     per_filetype = {
-      sql = { "lsp", "path", "buffer", "snippets", "dictionary" },
+      sql = { "dbee", "lsp", "path", "buffer", "snippets" },
     },
 
     providers = {
-      dictionary = {
-        module = "blink-cmp-dictionary",
-        name = "DB Tables",
-        min_keyword_length = 1,
-        opts = {
-          dictionary_files = vim.tbl_filter(function(path)
-            return vim.fn.filereadable(path) == 1
-          end, {
-            vim.fn.expand("~/.config/nvim/dictionary/databricks_tables.txt"),
-            vim.fn.stdpath("state") .. "/dictionary/databricks_tables.txt",
-          }),
-          force_fallback = true,
-        },
+      dbee = {
+        -- must match the name cmp-dbee registers with nvim-cmp
+        name = "dbee",
+        module = "blink.compat.source",
+        score_offset = 100,
       },
     },
   },
