@@ -1,6 +1,3 @@
--- Upstream offers every schema and table wherever the cursor is, and only
--- resolves columns for the first table in the statement. Replaces its source.
-
 local ok, Source = pcall(require, "cmp-dbee.source")
 if not ok then
   return
@@ -11,7 +8,6 @@ local Parser = require("cmp-dbee.treesitter")
 
 local Kind = vim.lsp.protocol.CompletionItemKind
 
--- keywords that leave the cursor where a table belongs
 local TABLE_CLAUSE = {
   from = true,
   join = true,
@@ -20,7 +16,6 @@ local TABLE_CLAUSE = {
   table = true,
 }
 
--- keywords that leave the cursor where a column belongs
 local COLUMN_CLAUSE = {
   select = true,
   where = true,
@@ -39,7 +34,6 @@ local function cursor_before_line()
   return vim.api.nvim_get_current_line():sub(1, col)
 end
 
--- stops a previous query's FROM leaking in
 local function statement_before_cursor()
   local row = vim.api.nvim_win_get_cursor(0)[1]
   local node = Parser.get_cursor_node()
@@ -50,7 +44,6 @@ local function statement_before_cursor()
   return table.concat(lines, "\n")
 end
 
--- whole statement, for the text fallback
 local function statement_text()
   local node = Parser.get_cursor_node()
   if not node then
@@ -72,7 +65,6 @@ local function clause_at_cursor()
   return last and TABLE_CLAUSE[last] and "table" or "column"
 end
 
--- last identifier before a trailing dot, dotted prefix and all
 --- @return string|nil
 local function qualifier_before_cursor()
   local line = cursor_before_line()
@@ -84,7 +76,19 @@ local function qualifier_before_cursor()
   return segments[#segments]
 end
 
-local function column_items(columns, schema, model)
+local function memoize(build)
+  local cache = setmetatable({}, { __mode = "k" })
+  return function(key, ...)
+    local hit = cache[key]
+    if not hit then
+      hit = build(key, ...)
+      cache[key] = hit
+    end
+    return hit
+  end
+end
+
+local column_items = memoize(function(columns, schema, model)
   local items = {}
   for _, column in ipairs(columns) do
     items[#items + 1] = {
@@ -95,9 +99,9 @@ local function column_items(columns, schema, model)
     }
   end
   return items
-end
+end)
 
-local function table_items(models, schema)
+local table_items = memoize(function(models, schema)
   local items = {}
   for _, model in ipairs(models) do
     items[#items + 1] = {
@@ -108,9 +112,9 @@ local function table_items(models, schema)
     }
   end
   return items
-end
+end)
 
-local function schema_items(structure)
+local schema_items = memoize(function(structure)
   local items = {}
   for _, schema in ipairs(structure) do
     items[#items + 1] = {
@@ -120,7 +124,16 @@ local function schema_items(structure)
     }
   end
   return items
-end
+end)
+
+local catalog_items = memoize(function(structure)
+  local items = {}
+  vim.list_extend(items, schema_items(structure))
+  for _, schema in ipairs(structure) do
+    vim.list_extend(items, table_items(schema.children or {}, schema.name))
+  end
+  return items
+end)
 
 local function cte_items(ctes)
   local items = {}
@@ -134,7 +147,6 @@ local function cte_items(ctes)
   return items
 end
 
--- columns of every table in the statement, plus the aliases
 local function complete_columns(refs, callback)
   local items = {}
   for _, ref in ipairs(refs) do
@@ -159,21 +171,24 @@ local function complete_columns(refs, callback)
   end
 end
 
--- everything a from/join position can take
 local function complete_tables(refs, callback)
   Database.get_db_structure(function(structure)
     structure = structure or {}
-    local items = schema_items(structure)
-    for _, schema in ipairs(structure) do
-      vim.list_extend(items, table_items(schema.children or {}, schema.name))
+    local catalog = catalog_items(structure)
+    local ctes = cte_items(refs)
+
+    if #ctes == 0 then
+      callback({ items = catalog, isIncomplete = false })
+      return
     end
-    vim.list_extend(items, cte_items(refs))
+
+    local items = {}
+    vim.list_extend(items, catalog)
+    vim.list_extend(items, ctes)
     callback({ items = items, isIncomplete = false })
   end)
 end
 
--- alias, then schema, then table, then catalog. Order matters: `catalog.schema.`
--- parses as a table reference and would otherwise be mistaken for one.
 local function complete_qualified(qualifier, refs, callback)
   local function columns_of(ref)
     Database.get_column_completion(ref.schema, ref.model, function(columns)
@@ -202,13 +217,10 @@ local function complete_qualified(qualifier, refs, callback)
         return
       end
     end
-    -- not a schema in the current catalog, so treat it as the catalog itself
     callback({ items = schema_items(structure), isIncomplete = false })
   end)
 end
 
--- half-typed statements parse to an ERROR node with no relations at all, which
--- is exactly when completion is asked for
 local function references_from_text(text)
   local words = {}
   for word in text:gmatch("[%w_%.]+") do
@@ -263,6 +275,10 @@ Source.complete = function(_, _, callback)
   end
 
   complete_tables(ctes, callback)
+end
+
+Source.get_trigger_characters = function()
+  return { "." }
 end
 
 return Source
