@@ -19,37 +19,97 @@ local build = function()
     require("dbee").install("go")
   end
 end
+-- same chrome on every tile, no gutters to read past
+local window_options = {
+  number = false,
+  relativenumber = false,
+  signcolumn = "no",
+  foldcolumn = "0",
+  statuscolumn = "",
+  cursorline = true,
+  list = false,
+  wrap = false,
+}
+
+-- two tones instead of the default rainbow: containers read as directories,
+-- everything else recedes
+local function candy(icon, highlight)
+  return { icon = icon, icon_highlight = highlight, text_highlight = "" }
+end
+
 dbee.setup({
   sources = {
     require("dbee.sources").EnvSource:new("DBEE_CONNECTIONS"),
     require("dbee.sources").FileSource:new(vim.fn.stdpath("state") .. "/dbee/persistence.json"),
   },
+
+  window_layout = require("dbee.layouts").Default:new({
+    drawer_width = 32,
+    result_height = 16,
+    call_log_height = 12,
+  }),
+
+  drawer = {
+    disable_help = true,
+    window_options = window_options,
+    candies = {
+      connection          = candy("󱘖", "Directory"),
+      database_switch     = candy("", "Directory"),
+      schema              = candy("", "Directory"),
+      table               = candy("", "Comment"),
+      streaming_table     = candy("", "Comment"),
+      managed             = candy("", "Comment"),
+      view                = candy("", "Comment"),
+      materialized_view   = candy("", "Comment"),
+      sink                = candy("", "Comment"),
+      column              = candy("󰠵", "Comment"),
+      history             = candy("", "Comment"),
+      note                = candy("", "Comment"),
+      source              = candy("󰃖", "Comment"),
+      help                = candy("󰋖", "Comment"),
+      add                 = candy("", "String"),
+      edit                = candy("󰏫", "Directory"),
+      remove              = candy("󰆴", "SpellBad"),
+      none                = candy(" ", ""),
+      none_dir            = candy("", "NonText"),
+      node_expanded       = candy("", "NonText"),
+      node_closed         = candy("", "NonText"),
+    },
+  },
+
   editor = {
+    window_options = window_options,
     mappings = {
       { key = "BB",   mode = "v", action = "run_selection" },
       { key = "BB",   mode = "n", action = "run_file" },
       { key = "<CR>", mode = "n", action = "run_under_cursor" },
     },
   },
+
   result = {
     page_size = 50,
     focus_result = false,
+    window_options = window_options,
+    mappings = {
+      { key = "L",          mode = "",  action = "page_next" },
+      { key = "H",          mode = "",  action = "page_prev" },
+      { key = "A",          mode = "",  action = "page_first" },
+      { key = "S",          mode = "",  action = "page_last" },
+
+      { key = "<leader>yj", mode = "n", action = "yank_current_json" },
+      { key = "<leader>yj", mode = "v", action = "yank_selection_json" },
+      { key = "<leader>YJ", mode = "",  action = "yank_all_json" },
+
+      { key = "<leader>yc", mode = "n", action = "yank_current_csv" },
+      { key = "<leader>yc", mode = "v", action = "yank_selection_csv" },
+      { key = "<leader>YC", mode = "",  action = "yank_all_csv" },
+
+      { key = "<C-c>",      mode = "",  action = "cancel_call" },
+    },
   },
-  mappings = {
-    { key = "L",          mode = "",  action = "page_next" },
-    { key = "H",          mode = "",  action = "page_prev" },
-    { key = "A",          mode = "",  action = "page_first" },
-    { key = "S",          mode = "",  action = "page_last" },
 
-    { key = "<leader>yj", mode = "n", action = "yank_current_json" },
-    { key = "<leader>yj", mode = "v", action = "yank_selection_json" },
-    { key = "<leader>YJ", mode = "",  action = "yank_all_json" },
-
-    { key = "<leader>yc", mode = "n", action = "yank_current_csv" },
-    { key = "<leader>yc", mode = "v", action = "yank_selection_csv" },
-    { key = "<leader>YC", mode = "",  action = "yank_all_csv" },
-
-    { key = "<C-c>",      mode = "",  action = "cancel_call" },
+  call_log = {
+    window_options = window_options,
   },
 })
 
