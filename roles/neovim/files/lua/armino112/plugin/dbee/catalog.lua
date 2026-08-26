@@ -13,19 +13,20 @@ M.config = {
   -- nothing ever waits on a stale entry: it is served straight away and
   -- revalidated behind you, so a short ttl buys freshness for a background call
   ttl_s = 5 * 60, -- schemas you actually touch, so an etl shows up on its own
-  sweep_ttl_s = 12 * 60 * 60, -- the whole-catalog warm, which is 50-odd calls
+  sweep_ttl_s = 10 * 60, -- the whole-catalog sweep, names only and so cheap
   retry_s = 60, -- a failed lookup is only worth caching until the next attempt
   timeout_ms = 15000,
   max_jobs = 4,
   store = vim.fn.stdpath("state") .. "/dbee/catalog.json",
 }
 
--- cache[catalog] = { fetched_at, schemas, tables = { [schema] = { fetched_at, failed, list } } }
+-- cache[catalog] = { fetched_at, swept_at, schemas,
+--   tables  = { [schema] = { fetched_at, failed, list } },   -- names, cheap
+--   columns = { [schema] = { fetched_at, failed, map } } }   -- types, 45x bigger
 local cache = nil
 local selected = {}
 local version = 0
 local structure = { version = -1 }
-local warmed = {}
 
 local function now()
   return os.time()
@@ -60,8 +61,9 @@ end
 
 local function bucket(catalog)
   local c = load()
-  c[catalog] = c[catalog] or { tables = {} }
+  c[catalog] = c[catalog] or {}
   c[catalog].tables = c[catalog].tables or {}
+  c[catalog].columns = c[catalog].columns or {}
   return c[catalog]
 end
 
@@ -193,9 +195,12 @@ local TABLE_TYPES = {
   MATERIALIZED_VIEW = "view",
 }
 
+--- table names and kinds for one schema. drops the column payload, which is
+--- 45x the bytes and most of the wall time, so this is cheap enough to re-run
+--- across the whole catalog.
 --- @param schema string
 --- @param callback fun(tables: table[], stale: boolean)
---- @param background? boolean part of the bulk warm: long ttl, queued last
+--- @param background? boolean part of the bulk sweep: queued last
 function M.tables(schema, callback, background)
   local catalog, target = M.context()
   if not catalog or not schema then
@@ -204,7 +209,19 @@ function M.tables(schema, callback, background)
 
   local entry = bucket(catalog)
   local cached = entry.tables[schema]
-  local args = { "tables", "list", catalog, schema, "--profile", util.profile(target), "-o", "json" }
+  local args = {
+    "tables",
+    "list",
+    catalog,
+    schema,
+    "--omit-columns",
+    "--omit-properties",
+    "--omit-username",
+    "--profile",
+    util.profile(target),
+    "-o",
+    "json",
+  }
 
   local parse = function(data)
     if not data then
@@ -213,6 +230,51 @@ function M.tables(schema, callback, background)
     end
 
     local list = {}
+    for _, tbl in ipairs(data) do
+      if tbl.name then
+        list[#list + 1] = {
+          name = tbl.name,
+          schema = schema,
+          type = TABLE_TYPES[tbl.table_type or ""] or "table",
+        }
+      end
+    end
+    entry.tables[schema] = { fetched_at = now(), list = list }
+    return list
+  end
+
+  local key = "tables:" .. catalog .. "." .. schema
+  if fresh(cached) then
+    return callback(cached.list, false)
+  end
+  if cached and cached.list and #cached.list > 0 then
+    fetch(key, args, parse, nil, true)
+    return callback(cached.list, true)
+  end
+  fetch(key, args, parse, callback, background)
+end
+
+--- columns for every table in one schema. the expensive call, so it only runs
+--- for schemas someone actually works in.
+--- @param schema string
+--- @param callback fun(columns: table<string, table[]>, stale: boolean)
+function M.columns(schema, callback)
+  local catalog, target = M.context()
+  if not catalog or not schema then
+    return callback({})
+  end
+
+  local entry = bucket(catalog)
+  local cached = entry.columns[schema]
+  local args = { "tables", "list", catalog, schema, "--profile", util.profile(target), "-o", "json" }
+
+  local parse = function(data)
+    if not data then
+      entry.columns[schema] = { fetched_at = now(), failed = true, map = (cached and cached.map) or {} }
+      return entry.columns[schema].map
+    end
+
+    local map = {}
     for _, tbl in ipairs(data) do
       if tbl.name then
         local columns = {}
@@ -224,26 +286,22 @@ function M.tables(schema, callback, background)
           end
           columns[#columns + 1] = { name = column.name, type = kind }
         end
-        list[#list + 1] = {
-          name = tbl.name,
-          schema = schema,
-          type = TABLE_TYPES[tbl.table_type or ""] or "table",
-          columns = columns,
-        }
+        map[tbl.name] = columns
       end
     end
-    entry.tables[schema] = { fetched_at = now(), list = list }
-    return list
+    entry.columns[schema] = { fetched_at = now(), map = map }
+    return map
   end
 
-  if fresh(cached, background and M.config.sweep_ttl_s or nil) then
-    return callback(cached.list, false)
+  local key = "columns:" .. catalog .. "." .. schema
+  if fresh(cached) then
+    return callback(cached.map, false)
   end
-  if cached and cached.list and #cached.list > 0 then
-    fetch("tables:" .. catalog .. "." .. schema, args, parse, nil, true)
-    return callback(cached.list, true)
+  if cached and cached.map and next(cached.map) then
+    fetch(key, args, parse, nil, true)
+    return callback(cached.map, true)
   end
-  fetch("tables:" .. catalog .. "." .. schema, args, parse, callback, background)
+  fetch(key, args, parse, callback)
 end
 
 --- @param callback fun(catalogs: string[])
@@ -288,14 +346,19 @@ end
 --- the user instead of making them wait per node
 function M.warm_all()
   local catalog = M.context()
-  if not catalog or warmed[catalog] then
+  if not catalog then
     return
   end
-  warmed[catalog] = true
+
+  local entry = bucket(catalog)
+  if entry.swept_at and now() - entry.swept_at < M.config.sweep_ttl_s then
+    return
+  end
+  entry.swept_at = now()
 
   M.schemas(function(schemas)
     if #schemas == 0 then
-      warmed[catalog] = nil -- schema list failed; let the next caller try again
+      entry.swept_at = nil -- schema list failed; let the next caller try again
       return
     end
     for _, schema in ipairs(schemas) do
@@ -338,16 +401,11 @@ function M.columns_now(schema, model)
     return nil
   end
 
-  local cached = bucket(catalog).tables[schema]
+  local cached = bucket(catalog).columns[schema]
   if not cached then
     return nil
   end
-  for _, tbl in ipairs(cached.list) do
-    if tbl.name == model then
-      return tbl.columns
-    end
-  end
-  return {}
+  return cached.map[model] or {}
 end
 
 --- @return string[]
@@ -381,13 +439,8 @@ end
 --- @param model string
 --- @param callback fun(columns: table[], stale: boolean)
 function M.get_column_completion(schema, model, callback)
-  M.tables(schema, function(tables, stale)
-    for _, tbl in ipairs(tables) do
-      if tbl.name == model then
-        return callback(tbl.columns, stale)
-      end
-    end
-    callback({}, stale)
+  M.columns(schema, function(map, stale)
+    callback(map[model] or {}, stale)
   end)
 end
 
@@ -423,7 +476,8 @@ vim.api.nvim_create_user_command("DbeeCatalogRefresh", function(opts)
 
   -- one schema is the etl case: drop just that, everything else stays warm
   if schema and catalog then
-    bucket(catalog).tables[schema] = nil
+    local entry = bucket(catalog)
+    entry.tables[schema], entry.columns[schema] = nil, nil
     version = version + 1
     M.tables(schema, function(tables)
       vim.notify(("dbee: %s refreshed, %d tables"):format(schema, #tables))
@@ -431,7 +485,7 @@ vim.api.nvim_create_user_command("DbeeCatalogRefresh", function(opts)
     return
   end
 
-  cache, warmed = {}, {}
+  cache = {}
   version = version + 1
   pcall(vim.fn.delete, M.config.store)
   M.warm_all()
@@ -461,12 +515,14 @@ vim.api.nvim_create_user_command("DbeeCatalog", function()
   for _, cached in pairs(entry.tables) do
     tables = tables + #cached.list
   end
-  vim.notify(("dbee: %s, %d schemas, %d/%d loaded, %d tables, %d queued"):format(
+  local swept = entry.swept_at and ("%dm ago"):format(math.floor((now() - entry.swept_at) / 60)) or "never"
+  vim.notify(("dbee: %s, %d/%d schemas, %d tables, columns for %d, swept %s, %d queued"):format(
     catalog,
-    #(entry.schemas or {}),
     vim.tbl_count(entry.tables),
     #(entry.schemas or {}),
     tables,
+    vim.tbl_count(entry.columns),
+    swept,
     #queue
   ))
 end, { desc = "Show cached unity catalog metadata" })
