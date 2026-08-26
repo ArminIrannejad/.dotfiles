@@ -222,6 +222,7 @@ pcall(function()
   end, { desc = "Drop cached dbee completion metadata" })
 end)
 
+require("armino112.plugin.dbee.gate")
 require("armino112.plugin.dbee.cmp")
 
 vim.keymap.set("n", "<leader>be", function()
