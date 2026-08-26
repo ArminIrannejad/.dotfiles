@@ -223,6 +223,7 @@ pcall(function()
 end)
 
 require("armino112.plugin.dbee.gate")
+require("armino112.plugin.dbee.drawer")
 require("armino112.plugin.dbee.cmp")
 
 vim.keymap.set("n", "<leader>be", function()
