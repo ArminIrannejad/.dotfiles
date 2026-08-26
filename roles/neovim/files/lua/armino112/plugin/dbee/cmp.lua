@@ -4,7 +4,14 @@ if not ok then
 end
 
 local Database = require("cmp-dbee.database")
+local Catalog = require("armino112.plugin.dbee.catalog")
 local Parser = require("cmp-dbee.treesitter")
+
+-- unity catalog answers without compute and off the ui thread; the dbee driver
+-- runs information_schema on the cluster and blocks nvim while it does
+local function provider()
+  return Catalog.available() and Catalog or Database
+end
 
 local Kind = vim.lsp.protocol.CompletionItemKind
 
@@ -161,7 +168,7 @@ local function complete_columns(refs, callback)
 
   local pending = #refs
   for _, ref in ipairs(refs) do
-    Database.get_column_completion(ref.schema, ref.model, function(columns)
+    provider().get_column_completion(ref.schema, ref.model, function(columns)
       vim.list_extend(items, column_items(columns, ref.schema, ref.model))
       pending = pending - 1
       if pending == 0 then
@@ -172,7 +179,7 @@ local function complete_columns(refs, callback)
 end
 
 local function complete_tables(refs, callback)
-  Database.get_db_structure(function(structure)
+  provider().get_db_structure(function(structure)
     structure = structure or {}
     local catalog = catalog_items(structure)
     local ctes = cte_items(refs)
@@ -191,7 +198,7 @@ end
 
 local function complete_qualified(qualifier, refs, callback)
   local function columns_of(ref)
-    Database.get_column_completion(ref.schema, ref.model, function(columns)
+    provider().get_column_completion(ref.schema, ref.model, function(columns)
       callback({ items = column_items(columns, ref.schema, ref.model), isIncomplete = false })
     end)
   end
@@ -203,11 +210,13 @@ local function complete_qualified(qualifier, refs, callback)
     end
   end
 
-  Database.get_db_structure(function(structure)
+  provider().get_db_structure(function(structure)
     structure = structure or {}
     for _, schema in ipairs(structure) do
       if schema.name == qualifier then
-        callback({ items = table_items(schema.children or {}, schema.name), isIncomplete = false })
+        provider().get_models(schema.name, function(models)
+          callback({ items = table_items(models, schema.name), isIncomplete = false })
+        end)
         return
       end
     end
