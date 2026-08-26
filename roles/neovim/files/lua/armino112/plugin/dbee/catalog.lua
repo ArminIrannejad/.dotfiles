@@ -10,7 +10,10 @@ local util = require("armino112.plugin.dbee.util")
 local M = {}
 
 M.config = {
-  ttl_s = 12 * 60 * 60,
+  -- nothing ever waits on a stale entry: it is served straight away and
+  -- revalidated behind you, so a short ttl buys freshness for a background call
+  ttl_s = 5 * 60, -- schemas you actually touch, so an etl shows up on its own
+  sweep_ttl_s = 12 * 60 * 60, -- the whole-catalog warm, which is 50-odd calls
   retry_s = 60, -- a failed lookup is only worth caching until the next attempt
   timeout_ms = 15000,
   max_jobs = 4,
@@ -62,11 +65,14 @@ local function bucket(catalog)
   return c[catalog]
 end
 
-local function fresh(entry)
+local function fresh(entry, ttl)
   if not entry or not entry.fetched_at then
     return false
   end
-  return now() - entry.fetched_at < (entry.failed and M.config.retry_s or M.config.ttl_s)
+  if entry.failed then
+    ttl = M.config.retry_s
+  end
+  return now() - entry.fetched_at < (ttl or M.config.ttl_s)
 end
 
 --- @return string|nil catalog, table|nil target
@@ -141,7 +147,7 @@ end
 --- replaced by the drawer bridge; fired whenever cached metadata changes
 function M.on_update() end
 
---- @param callback fun(schemas: string[])
+--- @param callback fun(schemas: string[], stale: boolean)
 function M.schemas(callback)
   local catalog, target = M.context()
   if not catalog then
@@ -150,7 +156,7 @@ function M.schemas(callback)
 
   local entry = bucket(catalog)
   if fresh(entry) and entry.schemas then
-    return callback(entry.schemas)
+    return callback(entry.schemas, false)
   end
 
   local stale = entry.schemas
@@ -177,7 +183,7 @@ function M.schemas(callback)
   -- stale data now beats correct data in a second; refresh happens behind it
   if stale then
     fetch("schemas:" .. catalog, args, parse, nil, true)
-    return callback(stale)
+    return callback(stale, true)
   end
   fetch("schemas:" .. catalog, args, parse, callback)
 end
@@ -188,8 +194,8 @@ local TABLE_TYPES = {
 }
 
 --- @param schema string
---- @param callback fun(tables: table[])
---- @param background? boolean queue behind anything interactive
+--- @param callback fun(tables: table[], stale: boolean)
+--- @param background? boolean part of the bulk warm: long ttl, queued last
 function M.tables(schema, callback, background)
   local catalog, target = M.context()
   if not catalog or not schema then
@@ -230,12 +236,12 @@ function M.tables(schema, callback, background)
     return list
   end
 
-  if fresh(cached) then
-    return callback(cached.list)
+  if fresh(cached, background and M.config.sweep_ttl_s or nil) then
+    return callback(cached.list, false)
   end
   if cached and cached.list and #cached.list > 0 then
     fetch("tables:" .. catalog .. "." .. schema, args, parse, nil, true)
-    return callback(cached.list)
+    return callback(cached.list, true)
   end
   fetch("tables:" .. catalog .. "." .. schema, args, parse, callback, background)
 end
@@ -249,7 +255,7 @@ function M.catalogs(callback)
 
   local entry = bucket(catalog)
   local cached = entry.catalogs
-  if fresh(cached) then
+  if fresh(cached, M.config.sweep_ttl_s) then
     return callback(cached.list)
   end
 
@@ -355,31 +361,33 @@ end
 --- @param callback fun(structure: table[])
 function M.get_db_structure(callback)
   if not M.available() then
-    return callback({})
+    return callback({}, false)
   end
-  M.schemas(function()
+  M.schemas(function(_, stale)
     M.warm_all()
-    callback(M.structure_now())
+    -- items are still arriving while the sweep runs; say so, or the client
+    -- filters the half-built list locally and never asks again
+    callback(M.structure_now(), stale or #queue > 0 or active > 0)
   end)
 end
 
 --- @param schema string
---- @param callback fun(models: table[])
+--- @param callback fun(models: table[], stale: boolean)
 function M.get_models(schema, callback)
   M.tables(schema, callback)
 end
 
 --- @param schema string
 --- @param model string
---- @param callback fun(columns: table[])
+--- @param callback fun(columns: table[], stale: boolean)
 function M.get_column_completion(schema, model, callback)
-  M.tables(schema, function(tables)
+  M.tables(schema, function(tables, stale)
     for _, tbl in ipairs(tables) do
       if tbl.name == model then
-        return callback(tbl.columns)
+        return callback(tbl.columns, stale)
       end
     end
-    callback({})
+    callback({}, stale)
   end)
 end
 
@@ -409,13 +417,38 @@ end)
 
 vim.defer_fn(warm_schemas, 1000)
 
-vim.api.nvim_create_user_command("DbeeCatalogRefresh", function()
+vim.api.nvim_create_user_command("DbeeCatalogRefresh", function(opts)
+  local schema = opts.args ~= "" and opts.args or nil
+  local catalog = M.context()
+
+  -- one schema is the etl case: drop just that, everything else stays warm
+  if schema and catalog then
+    bucket(catalog).tables[schema] = nil
+    version = version + 1
+    M.tables(schema, function(tables)
+      vim.notify(("dbee: %s refreshed, %d tables"):format(schema, #tables))
+    end)
+    return
+  end
+
   cache, warmed = {}, {}
   version = version + 1
   pcall(vim.fn.delete, M.config.store)
   M.warm_all()
   vim.notify("dbee: catalog cache dropped")
-end, { desc = "Drop cached unity catalog metadata" })
+end, {
+  nargs = "?",
+  desc = "Refresh cached unity catalog metadata, all of it or one schema",
+  complete = function(lead)
+    local catalog = M.context()
+    if not catalog then
+      return {}
+    end
+    return vim.tbl_filter(function(name)
+      return name:find(lead, 1, true) == 1
+    end, bucket(catalog).schemas or {})
+  end,
+})
 
 vim.api.nvim_create_user_command("DbeeCatalog", function()
   local catalog = M.context()

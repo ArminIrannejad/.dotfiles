@@ -156,6 +156,7 @@ end
 
 local function complete_columns(refs, callback)
   local items = {}
+  local incomplete = false
   for _, ref in ipairs(refs) do
     if ref.alias and ref.alias ~= "" then
       items[#items + 1] = {
@@ -168,38 +169,39 @@ local function complete_columns(refs, callback)
 
   local pending = #refs
   for _, ref in ipairs(refs) do
-    provider().get_column_completion(ref.schema, ref.model, function(columns)
+    provider().get_column_completion(ref.schema, ref.model, function(columns, stale)
       vim.list_extend(items, column_items(columns, ref.schema, ref.model))
+      incomplete = incomplete or stale == true
       pending = pending - 1
       if pending == 0 then
-        callback({ items = items, isIncomplete = false })
+        callback({ items = items, isIncomplete = incomplete })
       end
     end)
   end
 end
 
 local function complete_tables(refs, callback)
-  provider().get_db_structure(function(structure)
+  provider().get_db_structure(function(structure, stale)
     structure = structure or {}
     local catalog = catalog_items(structure)
     local ctes = cte_items(refs)
 
     if #ctes == 0 then
-      callback({ items = catalog, isIncomplete = false })
+      callback({ items = catalog, isIncomplete = stale == true })
       return
     end
 
     local items = {}
     vim.list_extend(items, catalog)
     vim.list_extend(items, ctes)
-    callback({ items = items, isIncomplete = false })
+    callback({ items = items, isIncomplete = stale == true })
   end)
 end
 
 local function complete_qualified(qualifier, refs, callback)
   local function columns_of(ref)
-    provider().get_column_completion(ref.schema, ref.model, function(columns)
-      callback({ items = column_items(columns, ref.schema, ref.model), isIncomplete = false })
+    provider().get_column_completion(ref.schema, ref.model, function(columns, stale)
+      callback({ items = column_items(columns, ref.schema, ref.model), isIncomplete = stale == true })
     end)
   end
 
@@ -214,8 +216,8 @@ local function complete_qualified(qualifier, refs, callback)
     structure = structure or {}
     for _, schema in ipairs(structure) do
       if schema.name == qualifier then
-        provider().get_models(schema.name, function(models)
-          callback({ items = table_items(models, schema.name), isIncomplete = false })
+        provider().get_models(schema.name, function(models, stale)
+          callback({ items = table_items(models, schema.name), isIncomplete = stale == true })
         end)
         return
       end
