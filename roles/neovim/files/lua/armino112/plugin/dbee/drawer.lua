@@ -57,21 +57,39 @@ local function guard(name, serve)
   end
 end
 
+-- nui refuses to expand a node with no children, and a node that never got
+-- marked expanded is not re-populated by the refresh that brings the real ones.
+-- so anything still loading gets a placeholder child to expand onto.
+local function loading_node(schema)
+  return { name = "loading", schema = schema, type = "" }
+end
+
 guard("connection_get_structure", function()
   wanted = true
   Catalog.warm_all()
-  return Catalog.structure_now()
+
+  local nodes = {}
+  for _, schema in ipairs(Catalog.structure_now()) do
+    local children = schema.children
+    nodes[#nodes + 1] = {
+      name = schema.name,
+      schema = schema.schema,
+      type = schema.type,
+      children = #children > 0 and children or { loading_node(schema.name) },
+    }
+  end
+  return nodes
 end)
 
 guard("connection_get_columns", function(_, opts)
-  local columns = Catalog.columns_now(opts and opts.schema, opts and opts.table)
-  if columns then
-    return columns
-  end
+  local schema = opts and opts.schema
+  Catalog.columns(schema, function() end) -- no-op when fresh, revalidates when not
 
-  -- not cached yet: fill it in and redraw the node once it lands
-  Catalog.tables(opts.schema, function() end)
-  return {}
+  local columns = Catalog.columns_now(schema, opts and opts.table)
+  if columns then
+    return columns -- empty is a real answer here: the table has no columns
+  end
+  return { { name = "loading", type = "" } }
 end)
 
 guard("connection_list_databases", function()
