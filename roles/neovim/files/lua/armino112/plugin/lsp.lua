@@ -91,6 +91,16 @@ local capabilities = require("blink.cmp").get_lsp_capabilities()
 
 require("mason").setup()
 
+-- formatters/linters mason-lspconfig won't handle
+require("mason-registry").refresh(function()
+  for _, tool in ipairs({ "prettier" }) do
+    local pkg = require("mason-registry").get_package(tool)
+    if not pkg:is_installed() then
+      pkg:install()
+    end
+  end
+end)
+
 require("mason-lspconfig").setup({
   ensure_installed = {
     "lua_ls",

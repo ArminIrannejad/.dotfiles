@@ -180,24 +180,95 @@ dbee.setup({
   },
 })
 
--- upstream paints a winbar over the result tile; the page counter lives in the
--- statusline area we already read, so drop the extra strip
+-- upstream's winbar reads "2/3 (150)" with the timing shoved to the far right;
+-- restate it as a row range pinned top-left so paging is legible at a glance
 pcall(function()
   local result = require("dbee.ui.result")
-
-  local function hide_winbar(self)
-    if self.winid and vim.api.nvim_win_is_valid(self.winid) then
-      vim.api.nvim_set_option_value("winbar", "", { win = self.winid })
-    end
-  end
-
-  result.set_default_result_window = hide_winbar
 
   local display_result = result.display_result
   result.display_result = function(self, page)
     local current = display_result(self, page)
-    hide_winbar(self)
+
+    if self.winid and vim.api.nvim_win_is_valid(self.winid) then
+      -- total row count only lives in the winbar upstream just wrote
+      local bar = vim.api.nvim_get_option_value("winbar", { win = self.winid })
+      local total = tonumber(bar:match("%((%d+)%)"))
+      if total then
+        local seconds = self.current_call.time_taken_us / 1000000
+        local text
+        if total == 0 then
+          text = string.format(" no rows  ·  %.3fs", seconds)
+        else
+          text = string.format(
+            " rows %d-%d of %d  ·  page %d/%d  ·  %.3fs",
+            self.page_size * current + 1,
+            math.min(self.page_size * (current + 1), total),
+            total,
+            current + 1,
+            self.page_ammount + 1,
+            seconds
+          )
+        end
+        vim.api.nvim_set_option_value("winbar", "%#DbeeResultInfo#" .. text, { win = self.winid })
+      end
+    end
+
     return current
+  end
+end)
+
+-- upstream dims row numbers into the same NonText as the box drawing, which in
+-- most themes is a hair off the background. keep the borders faint, not the numbers.
+pcall(function()
+  local result = require("dbee.ui.result")
+
+  local function set_hl()
+    vim.api.nvim_set_hl(0, "DbeeResultRowNumber", { link = "Comment", default = true })
+    vim.api.nvim_set_hl(0, "DbeeResultInfo", { link = "Comment", default = true })
+  end
+  set_hl()
+  vim.api.nvim_create_autocmd("ColorScheme", { callback = set_hl })
+
+  result.apply_highlight = function(_, winid)
+    if not (winid and vim.api.nvim_win_is_valid(winid)) then
+      return
+    end
+    vim.fn.clearmatches(winid)
+    vim.fn.matchadd("NonText", [[─\|│\|┼]], 10, -1, { window = winid })
+    vim.fn.matchadd("DbeeResultRowNumber", [[^\s*\d\+]], 20, -1, { window = winid })
+  end
+end)
+
+-- upstream flattens the driver error onto one line and leaves wrap off, so a
+-- failed query has to be read by scrolling sideways. wrap the status text only;
+-- result tables stay unwrapped.
+pcall(function()
+  local result = require("dbee.ui.result")
+
+  local failed = {
+    executing_failed = true,
+    retrieving_failed = true,
+    canceled = true,
+  }
+
+  local function sync_wrap(self)
+    local winid = self.winid
+    if not (winid and vim.api.nvim_win_is_valid(winid)) then
+      return
+    end
+    local on = failed[self.current_call and self.current_call.state] or false
+    for _, opt in ipairs({ "wrap", "linebreak", "breakindent" }) do
+      vim.api.nvim_set_option_value(opt, on, { win = winid })
+    end
+  end
+
+  for _, name in ipairs({ "display_status", "display_result", "show" }) do
+    local orig = result[name]
+    result[name] = function(self, ...)
+      local a, b = orig(self, ...)
+      sync_wrap(self)
+      return a, b
+    end
   end
 end)
 

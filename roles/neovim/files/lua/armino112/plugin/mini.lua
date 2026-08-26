@@ -1,9 +1,10 @@
 vim.pack.add({
   -- { src = 'https://github.com/echasnovski/mini.nvim' },
   -- { src = 'https://github.com/nvim-mini/mini.pairs'},
-  { src = 'https://github.com/nvim-mini/mini.jump',  version = 'stable' },
-  { src =  'https://github.com/nvim-mini/mini.ai'},
-  { src =   'https://github.com/nvim-mini/mini.surround'},
+  { src = 'https://github.com/nvim-mini/mini.jump',      version = 'stable' },
+  { src = 'https://github.com/nvim-mini/mini.ai' },
+  { src = 'https://github.com/nvim-mini/mini.surround' },
+  { src = 'https://github.com/nvim-mini/mini.hipatterns' },
 })
 
 require("mini.surround").setup({})
@@ -32,3 +33,14 @@ end, { desc = "Jump to previous target" })
 --   skip_unbalanced = true,
 --   markdown = true,
 -- })
+
+local hipatterns = require('mini.hipatterns')
+hipatterns.setup({
+  highlighters = {
+    todo = { pattern = '%f[%w]()TODO()%f[%W]', group = 'MiniHipatternsHack', },
+    fixme = { pattern = '%f[%w]()FIXME()%f[%W]', group = 'MiniHipatternsFixme', },
+    hack = { pattern = '%f[%w]()HACK()%f[%W]', group = 'MiniHipatternsTodo', },
+    note = { pattern = '%f[%w]()NOTE()%f[%W]', group = 'MiniHipatternsNote', },
+    hex_color = hipatterns.gen_highlighter.hex_color(),
+  },
+})
