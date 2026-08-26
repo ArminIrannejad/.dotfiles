@@ -187,8 +187,12 @@ vim.diagnostic.config({
   },
 })
 
-vim.keymap.set("n", "<leader>q", vim.diagnostic.setloclist, {
+vim.keymap.set("n", "<leader>eq", vim.diagnostic.setloclist, {
   desc = "Diagnostics to loclist",
+})
+
+vim.keymap.set("n", "<leader>eQ", vim.diagnostic.setqflist, {
+  desc = "Workspace diagnostics to quickfix",
 })
 
 local virtual_lines_enabled = false
