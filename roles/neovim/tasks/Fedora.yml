@@ -16,10 +16,12 @@
   become: true
   when: can_install_packages | default(false)
 
-- name: "Neovim | {{ ansible_facts['distribution'] }} | Install Neovim"
+# The dnf package trails upstream stable, and /usr/bin/nvim would shadow the
+# tarball install for anything that does not honour /usr/local/bin first.
+- name: "Neovim | {{ ansible_facts['distribution'] }} | Remove distro Neovim package"
   ansible.builtin.dnf:
     name: neovim
-    state: present
+    state: absent
   become: true
   when: can_install_packages | default(false)
 
@@ -45,7 +47,5 @@
     - neovim_cargo_tree_sitter.stat.exists
     - neovim_system_tree_sitter.rc == 0
 
-- name: "Neovim | {{ ansible_facts['distribution'] }} | Package installation skipped"
-  ansible.builtin.debug:
-    msg: "Neovim package installation skipped because sudo is unavailable."
-  when: not (can_install_packages | default(false))
+- name: "Neovim | {{ ansible_facts['distribution'] }} | Install from upstream tarball"
+  ansible.builtin.include_tasks: install_tarball.yml
