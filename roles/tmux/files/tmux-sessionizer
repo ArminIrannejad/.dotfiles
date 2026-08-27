@@ -30,7 +30,14 @@ if [[ -z $selected ]]; then
     exit 0
 fi
 
-selected_name=$(basename "$selected" | tr . _)
+selected_name=$(basename "$selected" | sed 's/^\.//' | tr . _)
+
+# .foo and foo strip to the same name; keep the dot for whichever loses the race.
+if has_session "$selected_name" &&
+   [[ $(tmux display-message -p -t "$selected_name" '#{session_path}') != "$selected" ]]; then
+    selected_name="_$selected_name"
+fi
+
 tmux_running=$(pgrep tmux)
 
 if [[ -z $TMUX ]] && [[ -z $tmux_running ]]; then
