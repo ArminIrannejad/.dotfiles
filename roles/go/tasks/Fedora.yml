@@ -1,11 +1,10 @@
 ---
-- name: "Go | Fedora | Install Go and build dependencies"
+- name: "Go | Fedora | Install build dependencies"
   ansible.builtin.dnf:
     name:
       - findutils
       - gcc
       - git
-      - golang
       - jq
       - make
       - rsync
@@ -13,3 +12,19 @@
     state: present
   become: true
   when: can_install_packages | default(false)
+
+# The dnf golang package trails upstream, and /usr/bin/go would shadow the
+# tarball install for anything that does not honour /usr/local/bin first.
+- name: "Go | Fedora | Remove distro golang packages"
+  ansible.builtin.dnf:
+    name:
+      - golang
+      - golang-bin
+      - golang-src
+    state: absent
+    autoremove: true
+  become: true
+  when: can_install_packages | default(false)
+
+- name: "Go | Fedora | Install from upstream tarball"
+  ansible.builtin.include_tasks: install_tarball.yml

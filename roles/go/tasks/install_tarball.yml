@@ -1,0 +1,107 @@
+---
+# Go is installed from the upstream go.dev tarball rather than distro packages:
+# both the Ubuntu archive and Fedora's golang package trail upstream releases.
+
+- name: "Go-Lang | Define GOARCH"
+  ansible.builtin.set_fact:
+    goarch: "{{ ansible_facts['machine'] | replace('x86_64', 'amd64') | replace('aarch64', 'arm64') }}"
+
+- name: "Go-Lang | Define GOOS"
+  ansible.builtin.set_fact:
+    goos: "{{ ansible_facts['system'] | lower }}"
+
+- name: "Go-Lang | Resolve latest release and install"
+  when: can_install_packages | default(false)
+  block:
+    - name: "Go-Lang | Getting version information"
+      ansible.builtin.command: "/usr/local/go/bin/go version"
+      register: current_go_version
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: "Go-Lang | Querying Latest Version JSON"
+      ansible.builtin.uri:
+        url: https://go.dev/dl/?mode=json
+      register: go_latest_version_json
+      changed_when: false
+      check_mode: false
+
+    - name: "Go-Lang | Registering go Latest Version"
+      ansible.builtin.set_fact:
+        go_latest_version: "go version {{ go_latest_version_json.json[0].version }} {{ goos }}/{{ goarch }}"
+
+    - name: "Go-Lang | Registering go Latest Release"
+      ansible.builtin.set_fact:
+        go_latest_release: "{{ go_latest_version_json.json[0].version }}"
+
+    - name: "Go-Lang | Define go_file"
+      ansible.builtin.set_fact:
+        go_file: "{{ go_latest_release }}.{{ goos }}-{{ goarch }}"
+
+    - name: "Go-Lang | Install"
+      when: go_latest_version not in current_go_version.stdout|default('')
+      block:
+        - name: "Go-Lang | Ensure clean download destination"
+          ansible.builtin.file:
+            path: "/tmp/{{ go_file }}.tar.gz"
+            state: absent
+          become: true
+
+        - name: "Go-Lang | Downloading GoLang Release"
+          ansible.builtin.get_url:
+            url: "https://golang.org/dl/{{ go_file }}.tar.gz"
+            dest: /tmp/
+            mode: "0644"
+            force: true
+          notify:
+            - Cleanup go downloaded tar
+
+        - name: "Go-Lang | Ensure clean extraction destination"
+          ansible.builtin.file:
+            path: "/tmp/go"
+            state: absent
+          become: true
+
+        - name: "Go-Lang | Extract go tar file"
+          ansible.builtin.unarchive:
+            src: "/tmp/{{ go_file }}.tar.gz"
+            dest: /tmp
+
+        - name: "Go-Lang | Remove any current Go installations"
+          ansible.builtin.file:
+            path: /usr/local/go
+            state: absent
+          become: true
+
+        - name: "Go-Lang | Install Go"
+          ansible.builtin.copy:
+            remote_src: true
+            src: /tmp/go
+            dest: /usr/local/
+            owner: "{{ host_user }}"
+            group: "{{ host_user }}"
+            force: true
+          become: true
+          notify:
+            - Remove extracted go directory
+
+        - name: "Go-Lang | Link go onto PATH"
+          ansible.builtin.file:
+            src: "/usr/local/go/bin/{{ item }}"
+            dest: "/usr/local/bin/{{ item }}"
+            state: link
+            force: true
+          loop:
+            - go
+            - gofmt
+          become: true
+
+        - name: "Go-Lang | Report version change"
+          ansible.builtin.debug:
+            msg: "Go updated: {{ current_go_version.stdout | default('') | regex_search('go[0-9]+\\.[0-9]+(\\.[0-9]+)?') | default('none', true) }} -> {{ go_latest_release }}"
+
+- name: "Go-Lang | Installation skipped"
+  ansible.builtin.debug:
+    msg: "Go installation skipped because sudo is unavailable. Run `sudo -v` and rerun dotfiles to install Go."
+  when: not (can_install_packages | default(false))
