@@ -176,7 +176,7 @@ vim.diagnostic.config({
   virtual_text = false,
   virtual_lines = false,
   signs = true,
-  underline = true,
+  underline = false,
   update_in_insert = false,
 
   float = {

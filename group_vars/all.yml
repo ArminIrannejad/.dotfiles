@@ -31,8 +31,8 @@ default_roles:
   - starship
   - terraform
   - tmux
-  - tree
-  - tuicr
+  # - tree
+  # - tuicr
   - unzip
   - uv
   - python_dev
@@ -48,7 +48,6 @@ zsh_default_shell: true
 neovim_enabled: true
 starship_enabled: true
 
-# Ubuntu installs Neovim from the upstream stable tarball; Fedora uses dnf.
 neovim_install_dir: /opt/nvim
 
 haskell_ghc_version: "9.10.3"
