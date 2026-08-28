@@ -14,12 +14,12 @@ default_roles:
   - fastfetch
   - fd
   - fzf
-  # - gh
-  # - git
+  - gh
+  - git
   # - gitleaks
   - go
   - haskell
-  # - hyperfine
+  - hyperfine
   - java
   - jq
   - lua
@@ -31,7 +31,7 @@ default_roles:
   - starship
   - terraform
   - tmux
-  # - tree
+  - tree
   # - tuicr
   - unzip
   - uv
