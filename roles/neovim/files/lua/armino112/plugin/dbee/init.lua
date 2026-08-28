@@ -129,6 +129,14 @@ dbee.setup({
   drawer = {
     disable_help = true,
     window_options = window_options,
+    candies = {
+      -- upstream has no catalog level; the tree grew one, so give it an icon
+      catalog = {
+        icon = "\u{f1c0}",
+        icon_highlight = "Directory",
+        text_highlight = "",
+      },
+    },
   },
 
   editor = {
