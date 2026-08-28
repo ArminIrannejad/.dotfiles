@@ -96,21 +96,60 @@ function layout:open()
   self:configure_window_on_switch(self.on_switch, win, ui.result_show)
   self:configure_window_on_quit(win)
 
-  vim.api.nvim_set_current_win(editor)
-  vim.cmd("lefta " .. self.drawer_width .. "vsplit")
-  win = vim.api.nvim_get_current_win()
-  self.windows.drawer = win
-  ui.drawer_show(win)
-  self:configure_window_on_switch(self.on_switch, win, ui.drawer_show)
-  self:configure_window_on_quit(win)
+  if not self.drawer_hidden then
+    self:drawer_open()
+  end
 
   vim.api.nvim_set_current_win(editor)
   self.is_opened = true
 end
 
+-- the drawer is the only window between the result and the editor, so <C-w>k
+-- out of the result lands in the tree whenever the cursor is in the left
+-- columns. hiding it is what makes that motion mean "back to the query".
+function layout:drawer_open()
+  vim.api.nvim_set_current_win(self.windows.editor)
+  vim.cmd("lefta " .. self.drawer_width .. "vsplit")
+  local win = vim.api.nvim_get_current_win()
+  self.windows.drawer = win
+  ui.drawer_show(win)
+  self:configure_window_on_switch(self.on_switch, win, ui.drawer_show)
+  self:configure_window_on_quit(win)
+end
+
+-- nvim_win_close only raises WinClosed; :q here would trip the QuitPre hook
+-- upstream hangs off every tile and tear down the whole ui
+function layout:drawer_close()
+  local win = self.windows.drawer
+  self.windows.drawer = nil
+  if not (win and vim.api.nvim_win_is_valid(win)) then
+    return
+  end
+  if vim.api.nvim_get_current_win() == win then
+    vim.api.nvim_set_current_win(self.windows.editor)
+  end
+  pcall(vim.api.nvim_win_close, win, false)
+end
+
+function layout:drawer_toggle()
+  self.drawer_hidden = not self.drawer_hidden
+  if not self.is_opened then
+    return -- honoured by the next open()
+  end
+  if self.drawer_hidden then
+    self:drawer_close()
+  else
+    local from = vim.api.nvim_get_current_win()
+    self:drawer_open()
+    vim.api.nvim_set_current_win(vim.api.nvim_win_is_valid(from) and from or self.windows.editor)
+  end
+end
+
 function layout:reset()
   vim.api.nvim_win_set_height(self.windows.result, self.result_height)
-  vim.api.nvim_win_set_width(self.windows.drawer, self.drawer_width)
+  if self.windows.drawer and vim.api.nvim_win_is_valid(self.windows.drawer) then
+    vim.api.nvim_win_set_width(self.windows.drawer, self.drawer_width)
+  end
 end
 
 function layout:close()
@@ -308,5 +347,9 @@ require("armino112.plugin.dbee.cmp")
 vim.keymap.set("n", "<leader>be", function()
   dbee.toggle()
 end, { silent = true })
+
+vim.keymap.set("n", "<leader>bd", function()
+  layout:drawer_toggle()
+end, { silent = true, desc = "Toggle dbee drawer" })
 
 vim.keymap.set("n", "<leader>bl", log_toggle, { silent = true, desc = "Toggle dbee call log" })
