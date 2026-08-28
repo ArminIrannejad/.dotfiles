@@ -4,6 +4,10 @@
 -- a hover costs nothing and still answers with the cluster asleep; the live call
 -- only covers what upstream spark does not document -- databricks builtins and
 -- anything registered in the catalog.
+--
+-- the table is pinned to one spark release rather than tracking latest, so a
+-- hover never describes a function the runtime does not have. regenerate with
+-- roles/neovim/scripts/gen-sparkdoc.py when the cluster runtime moves.
 
 local util = require("armino112.plugin.dbee.util")
 
@@ -16,18 +20,21 @@ M.config = {
   live_timeout_ms = 60000,
 }
 
-local docs -- ~270k of generated lua, only paid for on the first hover
+local docs -- ~200k of generated lua, only paid for on the first hover
 local live = {} -- name -> string|false, per session
 local pending = {} -- call_id -> fun(text|nil)
 local inflight = {} -- name -> true while the connection is answering
 
+--- @return string|nil doc, string|nil source
 local function bundled(name)
   if docs == nil then
     local ok, loaded = pcall(require, "armino112.plugin.dbee.sparkdoc")
     docs = ok and loaded or false
   end
-  local entry = docs and docs[name]
-  return entry and entry[2], entry and entry[1]
+  if not docs then
+    return nil, nil
+  end
+  return docs.functions[name], "spark " .. docs.version
 end
 
 --- the identifier the cursor sits in, or nil if it is not sitting in one
@@ -162,9 +169,9 @@ function M.show()
     return
   end
 
-  local doc, category = bundled(name)
+  local doc, source = bundled(name)
   if doc then
-    return float(vim.split(doc, "\n"), category .. " function")
+    return float(vim.split(doc, "\n"), source)
   end
 
   -- only a name written as a call is worth a round trip; K over a column would
@@ -201,9 +208,9 @@ vim.api.nvim_create_user_command("DbeeDoc", function(opts)
     return vim.notify("dbee: not a function name", vim.log.levels.WARN)
   end
 
-  local doc, category = bundled(name)
+  local doc, source = bundled(name)
   if doc then
-    return float(vim.split(doc, "\n"), category .. " function")
+    return float(vim.split(doc, "\n"), source)
   end
   ask_live(name, function(text)
     if text then
@@ -218,7 +225,7 @@ end, {
   complete = function(lead)
     bundled("")
     local out = {}
-    for name in pairs(docs or {}) do
+    for name in pairs(docs and docs.functions or {}) do
       if name:find(lead, 1, true) == 1 then
         out[#out + 1] = name
       end
