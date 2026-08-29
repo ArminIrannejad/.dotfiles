@@ -1,11 +1,14 @@
 ---
+# A stale sync DB makes `pacman -S` fail with 404s once the mirror rotates old
+# versions out, so the cache is always refreshed. Refreshing without upgrading
+# is the classic partial-upgrade footgun on Arch, so set
+# `system_update_packages: true` to pair it with a full -Syu.
 - name: "System | {{ ansible_facts['distribution'] }} | Update package cache"
   community.general.pacman:
     update_cache: true
+    upgrade: "{{ system_update_packages | default(false) | bool }}"
   become: true
-  when:
-    - can_install_packages | default(false)
-    - system_update_packages | default(false)
+  when: can_install_packages | default(false)
 
 - name: "System | {{ ansible_facts['distribution'] }} | Package installation skipped"
   ansible.builtin.debug:
