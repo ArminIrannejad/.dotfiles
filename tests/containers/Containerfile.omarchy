@@ -1,0 +1,12 @@
+FROM localhost/dotfiles-test-arch:latest
+USER root
+# Omarchy is Arch underneath but brands /etc/os-release; /etc/arch-release stays put
+RUN printf '%s\n' \
+    'NAME="Omarchy Linux"' \
+    'PRETTY_NAME="Omarchy Linux"' \
+    'ID=omarchy' \
+    'ID_LIKE=arch' \
+    'BUILD_ID=rolling' \
+    'ANSI_COLOR="38;2;23;147;209"' \
+    > /etc/os-release
+USER armin

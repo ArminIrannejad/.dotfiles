@@ -1,0 +1,13 @@
+FROM docker.io/library/archlinux:latest
+RUN pacman -Sy --noconfirm --needed archlinux-keyring && \
+    pacman -S --noconfirm --needed sudo git python ansible which && \
+    pacman -Scc --noconfirm
+# "dirty" host: distro toolchains already installed, so the roles must displace them
+RUN pacman -S --noconfirm --needed rust go neovim uv && pacman -Scc --noconfirm
+RUN useradd -m -s /bin/bash -u 1000 armin && \
+    echo 'armin ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/armin && chmod 440 /etc/sudoers.d/armin
+USER armin
+ENV HOME=/home/armin USER=armin
+# pre-existing regular files where the roles want symlinks
+RUN echo '# stale zshrc' > /home/armin/.zshrc && echo '# stale zshenv' > /home/armin/.zshenv
+WORKDIR /home/armin

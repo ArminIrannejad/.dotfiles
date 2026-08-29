@@ -1,0 +1,12 @@
+FROM docker.io/library/ubuntu:24.04
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y ansible sudo git python3 python3-apt curl ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+# "dirty" host: distro toolchains already installed
+RUN apt-get update && apt-get install -y rustc cargo golang-go neovim && rm -rf /var/lib/apt/lists/*
+RUN userdel -r ubuntu 2>/dev/null; useradd -m -s /bin/bash -u 1000 armin && \
+    echo 'armin ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/armin && chmod 440 /etc/sudoers.d/armin
+USER armin
+ENV HOME=/home/armin USER=armin
+RUN echo '# stale zshrc' > /home/armin/.zshrc && echo '# stale zshenv' > /home/armin/.zshenv
+WORKDIR /home/armin

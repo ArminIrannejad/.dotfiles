@@ -1,0 +1,10 @@
+FROM docker.io/library/fedora:latest
+RUN dnf install -y ansible sudo git python3 which findutils procps-ng && dnf clean all
+# "dirty" host: distro toolchains already installed
+RUN dnf install -y rust cargo golang neovim uv && dnf clean all
+RUN useradd -m -s /bin/bash -u 1000 armin && \
+    echo 'armin ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/armin && chmod 440 /etc/sudoers.d/armin
+USER armin
+ENV HOME=/home/armin USER=armin
+RUN echo '# stale zshrc' > /home/armin/.zshrc && echo '# stale zshenv' > /home/armin/.zshenv
+WORKDIR /home/armin
