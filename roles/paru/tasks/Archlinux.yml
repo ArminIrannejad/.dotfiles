@@ -1,0 +1,69 @@
+---
+# pacman only sees the official repos, so anything AUR-only needs a helper.
+# paru is built from source rather than installed from paru-bin: the prebuilt
+# package is linked against whatever pacman it was released with and dies with a
+# libalpm.so version error after a pacman bump. makepkg refuses to run as root,
+# so the build stays unprivileged and only the final `pacman -U` escalates.
+
+- name: "Paru | Archlinux | Check if an AUR helper is installed"
+  ansible.builtin.shell:
+    cmd: command -v paru || command -v yay
+  register: paru_installed
+  changed_when: false
+  failed_when: false
+
+- name: "Paru | Archlinux | Install paru from the AUR"
+  when:
+    - paru_installed.rc != 0
+    - can_install_packages | default(false)
+  block:
+    # AUR packages build against the libraries currently installed, so a
+    # half-upgraded system produces binaries that fail to link at runtime.
+    - name: "Paru | Archlinux | Update the system"
+      community.general.pacman:
+        update_cache: true
+        upgrade: true
+      become: true
+
+    - name: "Paru | Archlinux | Install build dependencies"
+      community.general.pacman:
+        name:
+          - base-devel
+          - git
+        state: present
+      become: true
+
+    - name: "Paru | Archlinux | Clone paru"
+      ansible.builtin.git:
+        repo: https://aur.archlinux.org/paru.git
+        dest: /tmp/paru
+        depth: 1
+        version: master
+        force: true
+
+    - name: "Paru | Archlinux | Build package"
+      # --rmdeps drops the Rust toolchain makepkg pulls in for the build
+      ansible.builtin.command:
+        cmd: makepkg --force --syncdeps --rmdeps --noconfirm
+        chdir: /tmp/paru
+      changed_when: true
+
+    - name: "Paru | Archlinux | Find built package"
+      ansible.builtin.find:
+        paths: /tmp/paru
+        patterns: "^paru-[0-9].*\\.pkg\\.tar\\..*$"
+        use_regex: true
+      register: paru_package
+
+    - name: "Paru | Archlinux | Install package"
+      ansible.builtin.command:
+        cmd: "pacman --upgrade --noconfirm {{ paru_package.files | map(attribute='path') | first }}"
+        creates: /usr/bin/paru
+      become: true
+
+- name: "Paru | Archlinux | Installation skipped"
+  ansible.builtin.debug:
+    msg: "AUR helper installation skipped because sudo is unavailable."
+  when:
+    - paru_installed.rc != 0
+    - not (can_install_packages | default(false))

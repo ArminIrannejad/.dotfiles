@@ -1,9 +1,10 @@
 git_user_name: "ArminIrannejad"
 git_user_email: "armin.irannejad@gmail.com"
 
-# uv needs to run before py
+# uv needs to run before py; paru before any role that needs the AUR
 default_roles:
   - system
+  - paru
   - bat
   - btop
   - build_essentials
