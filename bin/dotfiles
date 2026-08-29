@@ -436,7 +436,7 @@ detect_os() {
         echo "$id_lower"
         return
         ;;
-      arch|archlinux|cachyos)
+      arch|archlinux|cachyos|omarchy)
         echo "arch"
         return
         ;;
