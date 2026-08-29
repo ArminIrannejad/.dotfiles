@@ -8,6 +8,49 @@
   ansible.builtin.include_tasks: "{{ ansible_facts['distribution'] }}.yml"
   when: zsh_distribution_config.stat.exists
 
+# The login shell is set here rather than per-distro: chsh works the same on
+# every platform, and zsh may live in /usr/bin, /usr/local/bin or Homebrew.
+- name: "Zsh | Resolve zsh path"
+  ansible.builtin.shell:
+    cmd: command -v zsh
+  environment:
+    PATH: "/opt/homebrew/bin:/usr/local/bin:{{ ansible_facts['env']['PATH'] }}"
+  register: zsh_binary
+  changed_when: false
+  failed_when: false
+
+- name: "Zsh | Register zsh in /etc/shells"
+  ansible.builtin.lineinfile:
+    path: /etc/shells
+    line: "{{ zsh_binary.stdout }}"
+    state: present
+    create: true
+    mode: "0644"
+  become: true
+  when:
+    - zsh_binary.rc == 0
+    - can_install_packages | default(false)
+
+- name: "Zsh | Set default shell"
+  ansible.builtin.command:
+    cmd: "chsh -s {{ zsh_binary.stdout }} {{ host_user }}"
+  become: "{{ can_install_packages | default(false) }}"
+  register: zsh_chsh
+  changed_when: zsh_chsh.rc == 0
+  failed_when: false
+  when:
+    - zsh_default_shell | default(true)
+    - zsh_binary.rc == 0
+    - ansible_facts['user_shell'] != zsh_binary.stdout
+
+- name: "Zsh | Default shell change skipped"
+  ansible.builtin.debug:
+    msg: "Could not set zsh as the login shell. Run `chsh -s {{ zsh_binary.stdout | default('$(command -v zsh)') }}` manually."
+  when:
+    - zsh_chsh is defined
+    - zsh_chsh is not skipped
+    - zsh_chsh.rc | default(0) != 0
+
 - name: "Zsh | Ensure config directories exist"
   ansible.builtin.file:
     path: "{{ item }}"
