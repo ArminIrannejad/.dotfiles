@@ -1,0 +1,37 @@
+---
+# fastfetch only entered the Ubuntu archive in 24.10, so fall back to the
+# upstream .deb on releases that do not carry it.
+
+- name: "Fastfetch | {{ ansible_facts['distribution'] }} | Install packages"
+  ansible.builtin.apt:
+    name: fastfetch
+    state: present
+    update_cache: true
+  become: true
+  register: fastfetch_apt
+  ignore_errors: true
+  when: can_install_packages | default(false)
+
+- name: "Fastfetch | {{ ansible_facts['distribution'] }} | Install from upstream release"
+  when:
+    - can_install_packages | default(false)
+    - fastfetch_apt.failed | default(false)
+  block:
+    - name: "Fastfetch | {{ ansible_facts['distribution'] }} | Query latest release"
+      ansible.builtin.uri:
+        url: https://api.github.com/repos/fastfetch-cli/fastfetch/releases/latest
+      register: fastfetch_release
+      changed_when: false
+      check_mode: false
+
+    - name: "Fastfetch | {{ ansible_facts['distribution'] }} | Install .deb"
+      ansible.builtin.apt:
+        deb: "{{ fastfetch_asset }}"
+      vars:
+        fastfetch_arch: "{{ 'aarch64' if ansible_facts['machine'] == 'aarch64' else 'amd64' }}"
+        fastfetch_asset: >-
+          {{ fastfetch_release.json.assets
+             | map(attribute='browser_download_url')
+             | select('search', 'linux-' ~ fastfetch_arch ~ '\.deb$')
+             | first }}
+      become: true

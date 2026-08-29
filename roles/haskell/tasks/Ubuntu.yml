@@ -1,0 +1,14 @@
+---
+- name: "Haskell | {{ ansible_facts['distribution'] }} | Install GHCup dependencies"
+  ansible.builtin.apt:
+    name:
+      - build-essential
+      - curl
+      - libffi-dev
+      - libgmp-dev
+      - libncurses-dev
+      - pkg-config
+      - xz-utils
+    state: present
+  become: true
+  when: can_install_packages | default(false)

@@ -1,0 +1,41 @@
+---
+# Terraform is not in the Ubuntu archive, so use HashiCorp's own repository.
+
+- name: "Terraform | {{ ansible_facts['distribution'] }} | Create keyring directory"
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  become: true
+  when: can_install_packages | default(false)
+
+- name: "Terraform | {{ ansible_facts['distribution'] }} | Install repository key"
+  ansible.builtin.get_url:
+    url: https://apt.releases.hashicorp.com/gpg
+    dest: /etc/apt/keyrings/hashicorp.asc
+    owner: root
+    group: root
+    mode: "0644"
+  become: true
+  when: can_install_packages | default(false)
+
+- name: "Terraform | {{ ansible_facts['distribution'] }} | Configure HashiCorp repository"
+  ansible.builtin.apt_repository:
+    repo: >-
+      deb [arch={{ 'arm64' if ansible_facts['machine'] == 'aarch64' else 'amd64' }}
+      signed-by=/etc/apt/keyrings/hashicorp.asc]
+      https://apt.releases.hashicorp.com {{ ansible_facts['distribution_release'] }} main
+    filename: hashicorp
+    state: present
+  become: true
+  when: can_install_packages | default(false)
+
+- name: "Terraform | {{ ansible_facts['distribution'] }} | Install Terraform"
+  ansible.builtin.apt:
+    name: terraform
+    state: present
+    update_cache: true
+  become: true
+  when: can_install_packages | default(false)

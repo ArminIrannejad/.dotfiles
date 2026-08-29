@@ -1,0 +1,10 @@
+---
+# default-jdk tracks whatever JDK the release ships, so this keeps working
+# across Ubuntu versions without pinning a version that may not exist.
+- name: "Java | {{ ansible_facts['distribution'] }} | Install packages"
+  ansible.builtin.apt:
+    name: default-jdk
+    state: present
+    update_cache: true
+  become: true
+  when: can_install_packages | default(false)
