@@ -12,7 +12,9 @@
     state: present
   become: true
   register: starship_system_install
-  failed_when: false
+  # ignore_errors, not failed_when: false, so `failed` survives on the result and
+  # the script fallback can tell whether the package actually installed.
+  ignore_errors: true
   when:
     - starship_installed.rc != 0
     - can_install_packages | default(false)
@@ -26,7 +28,7 @@
   when:
     - starship_installed.rc != 0
     - can_install_packages | default(false)
-    - starship_system_install.rc | default(1) != 0
+    - starship_system_install.failed | default(true)
 
 - name: "Starship | {{ ansible_facts['distribution'] }} | Install Starship to user bin"
   ansible.builtin.shell:
