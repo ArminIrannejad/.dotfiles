@@ -13,13 +13,17 @@
 
 # /usr/bin/cargo from the distro package would shadow the rustup toolchain for
 # anything that does not honour ~/.cargo/bin first.
+# Not `autoremove: true`: in the dnf module that is a global orphan sweep and
+# takes unrelated packages with it. rust-std-static requires rust, so it has to
+# be named here or the depsolve fails.
 - name: "Rust | Fedora | Remove distro Rust packages"
   ansible.builtin.dnf:
     name:
       - cargo
       - rust
       - rust-analyzer
+      - rust-src
+      - rust-std-static
     state: absent
-    autoremove: true
   become: true
   when: can_install_packages | default(false)

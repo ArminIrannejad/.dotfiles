@@ -15,6 +15,7 @@
 
 # The dnf golang package trails upstream, and /usr/bin/go would shadow the
 # tarball install for anything that does not honour /usr/local/bin first.
+# Not `autoremove: true`: in the dnf module that is a global orphan sweep.
 - name: "Go | Fedora | Remove distro golang packages"
   ansible.builtin.dnf:
     name:
@@ -22,7 +23,6 @@
       - golang-bin
       - golang-src
     state: absent
-    autoremove: true
   become: true
   when: can_install_packages | default(false)
 
