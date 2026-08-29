@@ -1,0 +1,7 @@
+---
+- name: "Wget | {{ ansible_facts['distribution'] }} | Install packages"
+  community.general.pacman:
+    name: wget
+    state: present
+  become: true
+  when: can_install_packages | default(false)

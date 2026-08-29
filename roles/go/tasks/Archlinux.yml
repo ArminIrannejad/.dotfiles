@@ -1,0 +1,28 @@
+---
+- name: "Go | Archlinux | Install build dependencies"
+  community.general.pacman:
+    name:
+      - findutils
+      - gcc
+      - git
+      - jq
+      - make
+      - rsync
+      - tar
+    state: present
+  become: true
+  when: can_install_packages | default(false)
+
+# /usr/bin/go from the distro package would shadow the tarball install for
+# anything that does not honour /usr/local/bin first.
+- name: "Go | Archlinux | Remove distro golang packages"
+  community.general.pacman:
+    name:
+      - go
+      - go-tools
+    state: absent
+  become: true
+  when: can_install_packages | default(false)
+
+- name: "Go | Archlinux | Install from upstream tarball"
+  ansible.builtin.include_tasks: install_tarball.yml

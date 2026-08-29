@@ -1,0 +1,15 @@
+---
+- name: "Lua | Archlinux | Install Lua toolchain"
+  community.general.pacman:
+    name:
+      - lua
+      - luajit
+      - luarocks
+    state: present
+  become: true
+  when: can_install_packages | default(false)
+
+- name: "Lua | Archlinux | Package installation skipped"
+  ansible.builtin.debug:
+    msg: "Lua package installation skipped because sudo is unavailable."
+  when: not (can_install_packages | default(false))

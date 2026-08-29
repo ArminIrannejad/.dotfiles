@@ -1,0 +1,13 @@
+---
+- name: "System | {{ ansible_facts['distribution'] }} | Update package cache"
+  community.general.pacman:
+    update_cache: true
+  become: true
+  when:
+    - can_install_packages | default(false)
+    - system_update_packages | default(false)
+
+- name: "System | {{ ansible_facts['distribution'] }} | Package installation skipped"
+  ansible.builtin.debug:
+    msg: "Package installation skipped because sudo is unavailable. Run `sudo -v` and rerun dotfiles to install system packages."
+  when: not (can_install_packages | default(false))

@@ -1,0 +1,50 @@
+---
+- name: "Neovim | {{ ansible_facts['distribution'] }} | Install dependencies"
+  community.general.pacman:
+    name:
+      - cmake
+      - curl
+      - gcc
+      - libtool
+      - make
+      - pkgconf
+      - ripgrep
+      - tree-sitter-cli
+      - unzip
+    state: present
+  become: true
+  when: can_install_packages | default(false)
+
+# The distro package trails upstream stable, and /usr/bin/nvim would shadow the
+# tarball install for anything that does not honour /usr/local/bin first.
+- name: "Neovim | {{ ansible_facts['distribution'] }} | Remove distro Neovim package"
+  community.general.pacman:
+    name: neovim
+    state: absent
+  become: true
+  when: can_install_packages | default(false)
+
+- name: "Neovim | {{ ansible_facts['distribution'] }} | Check duplicate Cargo tree-sitter"
+  ansible.builtin.stat:
+    path: "{{ ansible_facts['user_dir'] }}/.cargo/bin/tree-sitter"
+  register: neovim_cargo_tree_sitter
+
+- name: "Neovim | {{ ansible_facts['distribution'] }} | Check system tree-sitter"
+  ansible.builtin.command: pacman -Q tree-sitter-cli
+  register: neovim_system_tree_sitter
+  check_mode: false
+  changed_when: false
+  failed_when: false
+
+- name: "Neovim | {{ ansible_facts['distribution'] }} | Remove duplicate Cargo tree-sitter"
+  ansible.builtin.command:
+    cmd: cargo uninstall tree-sitter-cli
+    removes: "{{ ansible_facts['user_dir'] }}/.cargo/bin/tree-sitter"
+  environment:
+    PATH: "{{ ansible_facts['user_dir'] }}/.cargo/bin:{{ ansible_facts['env']['PATH'] }}"
+  when:
+    - neovim_cargo_tree_sitter.stat.exists
+    - neovim_system_tree_sitter.rc == 0
+
+- name: "Neovim | {{ ansible_facts['distribution'] }} | Install from upstream tarball"
+  ansible.builtin.include_tasks: install_tarball.yml

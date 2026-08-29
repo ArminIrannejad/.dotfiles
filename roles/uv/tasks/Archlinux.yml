@@ -1,0 +1,16 @@
+---
+- name: "Uv | Archlinux | Check for duplicate pacman installation"
+  ansible.builtin.command: pacman -Q uv
+  register: uv_arch_pkg
+  check_mode: false
+  changed_when: false
+  failed_when: false
+
+- name: "Uv | Archlinux | Remove duplicate pacman installation"
+  community.general.pacman:
+    name: uv
+    state: absent
+  become: true
+  when:
+    - can_install_packages | default(false)
+    - uv_arch_pkg.rc == 0

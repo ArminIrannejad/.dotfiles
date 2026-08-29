@@ -1,0 +1,7 @@
+---
+- name: "Build essentials | {{ ansible_facts['distribution'] }} | Install packages"
+  community.general.pacman:
+    name: base-devel
+    state: present
+  become: true
+  when: can_install_packages | default(false)

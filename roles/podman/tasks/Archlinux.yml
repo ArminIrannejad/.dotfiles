@@ -1,0 +1,21 @@
+---
+- name: "Podman | Archlinux | Install Podman"
+  community.general.pacman:
+    name: podman
+    state: present
+  become: true
+  when: can_install_packages | default(false)
+
+- name: "Podman | Archlinux | Install Podman WSL Dependencies"
+  community.general.pacman:
+    name: qemu-system-x86
+    state: present
+  become: true
+  when:
+    - can_install_packages | default(false)
+    - ansible_host_environment_is_wsl
+
+- name: "Podman | Archlinux | Package installation skipped"
+  ansible.builtin.debug:
+    msg: "Podman package installation skipped because sudo is unavailable."
+  when: not (can_install_packages | default(false))

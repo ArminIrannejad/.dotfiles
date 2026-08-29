@@ -1,0 +1,10 @@
+---
+# python-devel has no Arch counterpart: the headers ship inside the `python` package.
+- name: "Python dev | Archlinux | Install packages"
+  community.general.pacman:
+    name:
+      - python-coverage
+      - python-poetry
+    state: present
+  become: true
+  when: can_install_packages | default(false)

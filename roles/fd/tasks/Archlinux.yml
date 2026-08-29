@@ -1,0 +1,7 @@
+---
+- name: "Fd | {{ ansible_facts['distribution'] }} | Install packages"
+  community.general.pacman:
+    name: fd
+    state: present
+  become: true
+  when: can_install_packages | default(false)
