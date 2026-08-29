@@ -1,0 +1,25 @@
+---
+- name: "Rust | Fedora | Install build dependencies"
+  ansible.builtin.dnf:
+    name:
+      - curl
+      - gcc
+      - make
+      - openssl-devel
+      - pkgconf-pkg-config
+    state: present
+  become: true
+  when: can_install_packages | default(false)
+
+# /usr/bin/cargo from the distro package would shadow the rustup toolchain for
+# anything that does not honour ~/.cargo/bin first.
+- name: "Rust | Fedora | Remove distro Rust packages"
+  ansible.builtin.dnf:
+    name:
+      - cargo
+      - rust
+      - rust-analyzer
+    state: absent
+    autoremove: true
+  become: true
+  when: can_install_packages | default(false)

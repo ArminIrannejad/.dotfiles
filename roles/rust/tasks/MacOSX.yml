@@ -1,0 +1,8 @@
+---
+# Homebrew's rustup formula would fight the upstream installer over ~/.cargo.
+- name: "Rust | MacOSX | Remove Homebrew Rust formulae"
+  community.general.homebrew:
+    name:
+      - rust
+      - rustup
+    state: absent

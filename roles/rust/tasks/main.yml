@@ -1,0 +1,60 @@
+---
+- name: "{{ role_name | capitalize }} | Check for distribution config"
+  ansible.builtin.stat:
+    path: "{{ role_path }}/tasks/{{ ansible_facts['distribution'] }}.yml"
+  register: rust_distribution_config
+
+- name: "{{ role_name | capitalize }} | Run distribution tasks"
+  ansible.builtin.include_tasks: "{{ ansible_facts['distribution'] }}.yml"
+  when: rust_distribution_config.stat.exists
+
+# rustup owns the toolchain so upgrades never wait on a distro package, and it
+# installs under $HOME, so none of this needs sudo.
+- name: "Rust | Check rustup"
+  ansible.builtin.stat:
+    path: "{{ ansible_facts['user_dir'] }}/.cargo/bin/rustup"
+  register: rust_rustup
+
+- name: "Rust | Download rustup bootstrap"
+  ansible.builtin.get_url:
+    url: https://sh.rustup.rs
+    dest: /tmp/rustup-init.sh
+    mode: "0755"
+  when: not rust_rustup.stat.exists
+
+- name: "Rust | Install rustup"
+  ansible.builtin.command:
+    cmd: >-
+      sh /tmp/rustup-init.sh -y --no-modify-path
+      --profile minimal --default-toolchain {{ rust_toolchain }}
+    creates: "{{ ansible_facts['user_dir'] }}/.cargo/bin/rustup"
+
+- name: "Rust | Select default toolchain"
+  ansible.builtin.command:
+    cmd: "{{ ansible_facts['user_dir'] }}/.cargo/bin/rustup default {{ rust_toolchain }}"
+  changed_when: false
+
+- name: "Rust | Update toolchain"
+  ansible.builtin.command:
+    cmd: "{{ ansible_facts['user_dir'] }}/.cargo/bin/rustup update {{ rust_toolchain }}"
+  register: rust_update
+  changed_when: "'unchanged' not in rust_update.stdout"
+
+- name: "Rust | Gather installed components"
+  ansible.builtin.command:
+    cmd: >-
+      {{ ansible_facts['user_dir'] }}/.cargo/bin/rustup component list
+      --installed --toolchain {{ rust_toolchain }}
+  register: rust_installed_components
+  check_mode: false
+  changed_when: false
+  failed_when: false
+
+- name: "Rust | Install components"
+  ansible.builtin.command:
+    cmd: >-
+      {{ ansible_facts['user_dir'] }}/.cargo/bin/rustup component add
+      {{ item }} --toolchain {{ rust_toolchain }}
+  loop: "{{ rust_components }}"
+  when: item not in (rust_installed_components.stdout | default(''))
+  changed_when: true

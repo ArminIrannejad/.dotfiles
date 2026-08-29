@@ -1,0 +1,23 @@
+---
+- name: "Rust | Ubuntu | Install build dependencies"
+  ansible.builtin.apt:
+    name:
+      - build-essential
+      - curl
+      - libssl-dev
+      - pkg-config
+    state: present
+  become: true
+  when: can_install_packages | default(false)
+
+# /usr/bin/cargo from the distro package would shadow the rustup toolchain for
+# anything that does not honour ~/.cargo/bin first.
+- name: "Rust | Ubuntu | Remove distro Rust packages"
+  ansible.builtin.apt:
+    name:
+      - cargo
+      - rustc
+    state: absent
+    purge: true
+  become: true
+  when: can_install_packages | default(false)

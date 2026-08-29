@@ -1,0 +1,22 @@
+---
+- name: "Rust | Archlinux | Install build dependencies"
+  community.general.pacman:
+    name:
+      - base-devel
+      - curl
+      - openssl
+      - pkgconf
+    state: present
+  become: true
+  when: can_install_packages | default(false)
+
+# /usr/bin/cargo from the distro package would shadow the rustup toolchain for
+# anything that does not honour ~/.cargo/bin first.
+- name: "Rust | Archlinux | Remove distro Rust packages"
+  community.general.pacman:
+    name:
+      - rust
+      - rust-analyzer
+    state: absent
+  become: true
+  when: can_install_packages | default(false)
