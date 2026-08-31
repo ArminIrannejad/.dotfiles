@@ -157,6 +157,10 @@ function layout:close()
   layouts.Default.close(self)
 end
 
+-- setup registers the persisted connections over rpc, which starts the go host
+-- and restores the call log, so the sweep has to land first
+require("armino112.plugin.dbee.janitor").sweep()
+
 dbee.setup({
   sources = {
     require("dbee.sources").EnvSource:new("DBEE_CONNECTIONS"),
@@ -340,6 +344,7 @@ pcall(function()
   end, { desc = "Drop cached dbee completion metadata" })
 end)
 
+require("armino112.plugin.dbee.limit")
 require("armino112.plugin.dbee.gate")
 require("armino112.plugin.dbee.drawer")
 require("armino112.plugin.dbee.cmp")
