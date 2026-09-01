@@ -16,9 +16,10 @@ M.config = {
   log = "/tmp/dbee-calllog.json",
   history = "/tmp/dbee-history",
 
-  keep = 20, -- calls per connection kept in the log
+  keep = 5, -- calls per connection kept in the log
+  max_results = 5, -- archived result sets kept, newest first
   max_age_s = 7 * 24 * 60 * 60,
-  max_bytes = 2 * 1024 * 1024 * 1024,
+  max_bytes = 1024 * 1024 * 1024,
 
   check_ms = 10 * 1000,
   prune_ms = 5 * 60 * 1000,
@@ -122,18 +123,22 @@ local function measure(on_done)
   end)
 end
 
---- keep archives newest first while they fit the age and byte budgets, delete
---- the rest. an archive dropped while its call is still in the log leaves the
---- host to downgrade that call to "unknown" on the next restore, and the next
---- trim ages it out.
+--- keep archives newest first while they fit the count, age and byte budgets,
+--- delete the rest. an archive dropped while its call is still in the log
+--- leaves the host to downgrade that call to "unknown" on the next restore, and
+--- the next trim ages it out.
 --- @param report boolean|nil
 function M.prune(report)
   measure(function(archives)
     local cutoff = os.time() - M.config.max_age_s
     local drop, kept, freed, total = {}, 0, 0, 0
 
-    for _, archive in ipairs(archives) do
-      if archive.at >= cutoff and total + archive.bytes <= M.config.max_bytes then
+    for rank, archive in ipairs(archives) do
+      local fits = rank <= M.config.max_results
+        and archive.at >= cutoff
+        and total + archive.bytes <= M.config.max_bytes
+
+      if fits then
         total = total + archive.bytes
         kept = kept + 1
       else
