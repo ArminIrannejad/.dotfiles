@@ -344,6 +344,7 @@ pcall(function()
   end, { desc = "Drop cached dbee completion metadata" })
 end)
 
+require("armino112.plugin.dbee.limit")
 require("armino112.plugin.dbee.gate")
 require("armino112.plugin.dbee.drawer")
 require("armino112.plugin.dbee.cmp")
