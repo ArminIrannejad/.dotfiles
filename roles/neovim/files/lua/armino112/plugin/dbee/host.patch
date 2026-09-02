@@ -1,0 +1,247 @@
+diff -ruN a/core/builders/next_abandon_test.go b/core/builders/next_abandon_test.go
+--- a/core/builders/next_abandon_test.go
++++ b/core/builders/next_abandon_test.go
+@@ -0,0 +1,35 @@
++package builders
++
++import (
++	"testing"
++	"time"
++)
++
++// a capped drain stops calling hasNext mid-stream, so the yield goroutine must
++// give up on its own rather than sit on a full channel forever.
++func TestNextYieldAbandonsUnreadRows(t *testing.T) {
++	abandonAfter = 50 * time.Millisecond
++	defer func() { abandonAfter = 60 * time.Second }()
++
++	returned := make(chan struct{})
++	_, hasNext := NextYield(func(yield func(...any)) error {
++		defer close(returned)
++		for i := 0; i < 1000; i++ {
++			yield(i)
++		}
++		return nil
++	})
++
++	// read a few rows, then walk away like a capped drain does
++	for i := 0; i < 5; i++ {
++		if !hasNext() {
++			t.Fatal("stream ended early")
++		}
++	}
++
++	select {
++	case <-returned:
++	case <-time.After(10 * time.Second):
++		t.Fatal("yield goroutine never returned: a capped drain leaks it")
++	}
++}
+diff -ruN a/core/builders/next.go b/core/builders/next.go
+--- a/core/builders/next.go
++++ b/core/builders/next.go
+@@ -69,6 +69,10 @@
+ 	return next, hasNext
+ }
+ 
++// how long a yield waits for a reader before giving the row up. only a
++// consumer that has stopped reading altogether ever waits this long.
++var abandonAfter = 60 * time.Second
++
+ // closeOnce closes the channel if it isn't already closed.
+ func closeOnce[T any](ch chan T) {
+ 	select {
+@@ -95,9 +99,20 @@
+ 			close(errorsCh)
+ 		}()
+ 
++		// a capped drain stops reading mid-stream and closes the result, and
++		// nothing here can see that: without the timeout this send would block for
++		// the life of the host, pinning the goroutine and everything it holds.
++		abandoned := false
+ 		err := fn(func(v ...any) {
+-			resultsCh <- v
+-			closeOnce(readyCh)
++			if abandoned {
++				return
++			}
++			select {
++			case resultsCh <- v:
++				closeOnce(readyCh)
++			case <-time.After(abandonAfter):
++				abandoned = true
++			}
+ 		})
+ 		if err != nil {
+ 			errorsCh <- err
+diff -ruN a/core/call.go b/core/call.go
+--- a/core/call.go
++++ b/core/call.go
+@@ -153,6 +153,7 @@
+ 		}
+ 
+ 		// set iterator to result
++		c.result.maxRows = rowCap(query)
+ 		err = c.result.SetIter(iter, func() { eventsCh <- CallStateRetrieving })
+ 		if err != nil {
+ 			c.timeTaken = time.Since(c.timestamp)
+diff -ruN a/core/limit.go b/core/limit.go
+--- a/core/limit.go
++++ b/core/limit.go
+@@ -0,0 +1,29 @@
++package core
++
++import (
++	"os"
++	"regexp"
++	"strconv"
++)
++
++// the host drains a whole result set into memory before the ui draws its first
++// page, and never evicts it. DBEE_MAX_ROWS bounds the drain instead of the
++// query: past the cap the iterator is closed and the rest is never read.
++// a query carrying `no_limit` opts out. 0 or unset means no cap.
++var maxRows = func() int {
++	n, err := strconv.Atoi(os.Getenv("DBEE_MAX_ROWS"))
++	if err != nil || n < 0 {
++		return 0
++	}
++	return n
++}()
++
++var noLimitRe = regexp.MustCompile(`(?i)\bno_limit\b`)
++
++// rowCap is the cap that applies to a query, 0 for none.
++func rowCap(query string) int {
++	if noLimitRe.MatchString(query) {
++		return 0
++	}
++	return maxRows
++}
+diff -ruN a/core/limit_internal_test.go b/core/limit_internal_test.go
+--- a/core/limit_internal_test.go
++++ b/core/limit_internal_test.go
+@@ -0,0 +1,51 @@
++package core
++
++import "testing"
++
++type countStream struct {
++	n, read int
++	closed  bool
++}
++
++func (s *countStream) Meta() *Meta    { return &Meta{} }
++func (s *countStream) Header() Header { return Header{"a"} }
++func (s *countStream) HasNext() bool  { return s.read < s.n }
++func (s *countStream) Close()         { s.closed = true }
++func (s *countStream) Next() (Row, error) {
++	s.read++
++	return Row{s.read}, nil
++}
++
++func TestRowCap(t *testing.T) {
++	for _, tc := range []struct {
++		name  string
++		cap   int
++		query string
++		want  int
++		read  int
++	}{
++		{"capped", 10, "select * from t", 10, 10},
++		{"under cap", 5000, "select * from t", 1000, 1000},
++		{"no cap", 0, "select * from t", 1000, 1000},
++		{"opt out", 10, "select * from t -- no_limit", 1000, 1000},
++	} {
++		t.Run(tc.name, func(t *testing.T) {
++			maxRows = tc.cap
++			s := &countStream{n: 1000}
++			r := new(Result)
++			r.maxRows = rowCap(tc.query)
++			if err := r.SetIter(s, nil); err != nil {
++				t.Fatal(err)
++			}
++			if r.Len() != tc.want {
++				t.Fatalf("kept %d rows, want %d", r.Len(), tc.want)
++			}
++			if s.read != tc.read {
++				t.Fatalf("pulled %d rows from the driver, want %d", s.read, tc.read)
++			}
++			if !s.closed {
++				t.Fatal("iterator not closed")
++			}
++		})
++	}
++}
+diff -ruN a/core/result.go b/core/result.go
+--- a/core/result.go
++++ b/core/result.go
+@@ -17,6 +17,7 @@
+ 
+ 	isDrained  bool
+ 	isFilled   bool
++	maxRows    int
+ 	writeMutex sync.Mutex
+ 	readMutex  sync.RWMutex
+ }
+@@ -45,8 +46,16 @@
+ 		onFillStart()
+ 	}
+ 
+-	// drain the iterator
+-	for iter.HasNext() {
++	// drain the iterator, up to the row cap. the cap is checked before HasNext
++	// so a capped drain never pulls the row it is about to throw away.
++	for {
++		if cr.maxRows > 0 && len(cr.rows) >= cr.maxRows {
++			break
++		}
++		if !iter.HasNext() {
++			break
++		}
++
+ 		row, err := iter.Next()
+ 		if err != nil {
+ 			cr.isFilled = false
+diff -ruN a/main.go b/main.go
+--- a/main.go
++++ b/main.go
+@@ -13,6 +13,9 @@
+ 	"github.com/kndndrj/nvim-dbee/dbee/plugin"
+ )
+ 
++// revision this was built from, set with -ldflags
++var version string
++
+ func main() {
+ 	generateManifest := flag.String("manifest", "", "Generate manifest to file (filename of manifest).")
+ 	getVersion := flag.Bool("version", false, "Get version and exit.")
+@@ -20,17 +23,19 @@
+ 
+ 	// get version info
+ 	if *getVersion {
+-		info, ok := debug.ReadBuildInfo()
+-		if !ok {
+-			fmt.Println("unknown")
+-			os.Exit(1)
+-		}
+-		for _, inf := range info.Settings {
+-			if inf.Key == "vcs.revision" {
+-				fmt.Println(inf.Value)
+-				return
++		if info, ok := debug.ReadBuildInfo(); ok {
++			for _, inf := range info.Settings {
++				if inf.Key == "vcs.revision" {
++					fmt.Println(inf.Value)
++					return
++				}
+ 			}
+ 		}
++		// built with -buildvcs=false: the revision is stamped in with -ldflags
++		if version != "" {
++			fmt.Println(version)
++			return
++		}
+ 		fmt.Println("unknown")
+ 		os.Exit(1)
+ 	}

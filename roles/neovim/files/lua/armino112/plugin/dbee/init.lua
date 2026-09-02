@@ -13,12 +13,6 @@ if not ok then
   return
 end
 
-local build = function()
-  local binary = vim.fn.expand("$HOME") .. "/.local/share/nvim/dbee/bin/dbee"
-  if vim.fn.filereadable(binary) == 0 then
-    require("dbee").install("go")
-  end
-end
 -- same chrome on every tile
 local window_options = {
   number = false,
@@ -158,8 +152,9 @@ function layout:close()
 end
 
 -- setup registers the persisted connections over rpc, which starts the go host
--- and restores the call log, so the sweep has to land first
+-- and restores the call log, so the sweep and the host's env have to land first
 require("armino112.plugin.dbee.janitor").start()
+require("armino112.plugin.dbee.host").setup()
 
 dbee.setup({
   sources = {

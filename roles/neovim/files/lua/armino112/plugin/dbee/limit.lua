@@ -1,25 +1,40 @@
--- the go host drains a whole result set into memory before it draws the first
--- page, then keeps it there: handler.lookupCall is never evicted and
--- core.Result:Wipe is dead code upstream, so every call ever run stays resident
--- for the life of the host. it also gobs a second copy to /tmp/dbee-history.
--- one `SELECT * FROM delta.\`abfss://...\`` is gigabytes of rss, the next one is
--- gigabytes more, and the host gets oom-killed a handful of queries in. the
--- janitor bounds the disk after the fact; this bounds the query up front.
+-- host.lua bounds how many rows the host reads, which holds for every dialect
+-- but pushes nothing down: the engine still scans the lot. so where a trailing
+-- LIMIT is unambiguously valid, send one, and let the engine stop instead.
 --
--- the result window only ever renders one page, so nothing is lost by bounding
--- the statement instead. `-- no_limit` in the query opts out, silently: the cap
--- is never announced, so a query either says no_limit or is capped.
+-- unambiguously is doing the work. the statement has to be a plain select, on a
+-- dialect that spells its cap `LIMIT`, with nothing after the select list that
+-- a LIMIT cannot follow. anything else -- sqlserver's TOP, oracle's FETCH
+-- FIRST, EXPLAIN, DESCRIBE, the non-sql adapters -- is left to the host cap.
+-- `no_limit` in the query opts out of both, silently.
 
 local ok_handler, Handler = pcall(require, "dbee.handler")
 if not ok_handler then
   return
 end
 
+local host = require("armino112.plugin.dbee.host")
+
 local M = {}
 
 M.config = {
-  rows = 10000,
   marker = "no_limit",
+}
+
+-- adapters that take a trailing LIMIT, by every alias they register under
+local dialects = {
+  bigquery = true,
+  clickhouse = true,
+  databricks = true,
+  duck = true,
+  duckdb = true,
+  mysql = true,
+  pg = true,
+  postgres = true,
+  postgresql = true,
+  redshift = true,
+  sqlite = true,
+  sqlite3 = true,
 }
 
 -- blank the contents of comments, string literals and quoted identifiers so the
@@ -101,11 +116,40 @@ local function has_top_level(masked, d, word)
   end
 end
 
-local writes = { "insert", "create", "update", "delete", "merge", "replace", "alter", "drop" }
+local skips = {
+  -- a cte can feed a write, and a cap belongs on neither half of one
+  "insert",
+  "create",
+  "update",
+  "delete",
+  "merge",
+  "replace",
+  "alter",
+  "drop",
 
+  -- already bounded, or bounded by a clause nothing may follow
+  "limit",
+  "fetch", -- FETCH FIRST n ROWS ONLY
+  "offset", -- LIMIT after OFFSET is a syntax error where it parses at all
+  "into", -- SELECT INTO, INTO OUTFILE
+  "for", -- FOR UPDATE / FOR SHARE
+}
+
+--- @param id string connection id
+--- @return boolean does this connection's dialect take a trailing LIMIT?
+local function pushes_down(id)
+  local ok, core = pcall(require, "dbee.api.core")
+  if not ok then
+    return false
+  end
+  local got, params = pcall(core.connection_get_params, id)
+  return got and type(params) == "table" and dialects[params.type] == true
+end
+
+--- @param id string connection id
 --- @return string|nil query with a row cap appended, nil to leave it alone
-function M.apply(query)
-  local rows = M.config.rows
+function M.apply(id, query)
+  local rows = host.config.rows
   if type(query) ~= "string" or not rows or rows <= 0 then
     return nil
   end
@@ -122,14 +166,13 @@ function M.apply(query)
 
   local d = depths(masked)
 
-  -- a cte can feed a write, and a cap belongs on neither half of one
-  for _, word in ipairs(writes) do
+  for _, word in ipairs(skips) do
     if has_top_level(masked, d, word) then
       return nil
     end
   end
 
-  if has_top_level(masked, d, "limit") then
+  if not pushes_down(id) then
     return nil
   end
 
@@ -159,24 +202,35 @@ end
 local connection_execute = Handler.connection_execute
 
 Handler.connection_execute = function(self, id, query)
-  return connection_execute(self, id, M.apply(query) or query)
+  return connection_execute(self, id, M.apply(id, query) or query)
 end
 
+-- the host reads DBEE_MAX_ROWS once at spawn, so this only moves the pushdown
+-- until nvim restarts. lowering it still bounds the query; raising it past the
+-- host cap does nothing.
 vim.api.nvim_create_user_command("DbeeLimit", function(opts)
   local arg = vim.trim(opts.args)
+  local report = function()
+    local rows = host.config.rows
+    vim.notify(("dbee: pushdown %s, host cap %s until restart"):format(
+      rows > 0 and rows or "off",
+      tonumber(vim.env.DBEE_MAX_ROWS) or "off"
+    ))
+  end
+
   if arg == "" then
-    return vim.notify(("dbee: row cap %s"):format(M.config.rows > 0 and M.config.rows or "off"))
+    return report()
   end
   if arg == "off" or arg == "0" then
-    M.config.rows = 0
-    return vim.notify("dbee: row cap off")
+    host.config.rows = 0
+    return report()
   end
   local n = tonumber(arg)
   if not n or n < 0 then
     return vim.notify("dbee: DbeeLimit takes a row count or `off`", vim.log.levels.ERROR)
   end
-  M.config.rows = math.floor(n)
-  vim.notify(("dbee: row cap %d"):format(M.config.rows))
+  host.config.rows = math.floor(n)
+  report()
 end, { nargs = "?", desc = "Show or set the dbee row cap" })
 
 return M
