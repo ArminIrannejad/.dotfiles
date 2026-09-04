@@ -83,7 +83,11 @@ require("snacks").setup({
 })
 
 vim.keymap.set("n", "gd", function()
-  Snacks.picker.lsp_definitions()
+  if next(vim.lsp.get_clients({ bufnr = 0, method = "textDocument/definition" })) then
+    Snacks.picker.lsp_definitions()
+  else
+    vim.cmd("normal! gd")
+  end
 end, { desc = "Go to def" })
 
 vim.keymap.set("n", "<leader>fh", function()
