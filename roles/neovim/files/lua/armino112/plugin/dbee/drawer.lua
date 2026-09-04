@@ -141,6 +141,47 @@ WHERE table_schema = '%s'
   }
 end)
 
+-- upstream's only refresh is the `r` mapping, and that just redraws the tree.
+-- now that the tree is served from the catalog cache a redraw hands back the
+-- same names, so hang a node off every connection that drops the cache first.
+pcall(function()
+  local convert = require("dbee.ui.drawer.convert")
+  local NuiTree = require("nui.tree")
+  local handler_nodes = convert.handler_nodes
+
+  local function refresh_node(id)
+    return NuiTree.Node({
+      id = id .. "__catalog_refresh__",
+      name = "refresh",
+      type = "refresh",
+      action_1 = function(cb)
+        if serving(id) then
+          Catalog.refresh()
+        end
+        cb() -- a connection the cache does not serve refetches from the driver
+      end,
+    })
+  end
+
+  -- the connection's children are lazy, so the node has to go in behind them
+  convert.handler_nodes = function(...)
+    local nodes = handler_nodes(...)
+    for _, source in ipairs(nodes) do
+      for _, node in ipairs(source.__children or {}) do
+        local lazy = node.lazy_children
+        if node.type == "connection" and lazy then
+          node.lazy_children = function()
+            local children = lazy()
+            table.insert(children, 1, refresh_node(node.id))
+            return children
+          end
+        end
+      end
+    end
+    return nodes
+  end
+end)
+
 -- expanding a catalog or a schema is the only signal that someone wants its
 -- contents; the structure call fires on refresh, not on expand, so hook the
 -- action itself. a catalog nobody opens costs nothing.

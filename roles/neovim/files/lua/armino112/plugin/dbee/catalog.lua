@@ -603,13 +603,16 @@ local function parse_arg(arg)
   return (M.context()), arg
 end
 
-vim.api.nvim_create_user_command("DbeeCatalogRefresh", function(opts)
+--- drop cached metadata and fetch it again: all of it, one catalog, or one
+--- catalog.schema
+--- @param arg string|nil
+function M.refresh(arg)
   local _, target, profile = M.context()
   if not target then
     return vim.notify("dbee: no unity catalog for this connection", vim.log.levels.WARN)
   end
 
-  local catalog, schema = parse_arg(opts.args)
+  local catalog, schema = parse_arg(arg)
 
   -- one schema is the etl case: drop just that, everything else stays warm
   if catalog and schema then
@@ -636,6 +639,10 @@ vim.api.nvim_create_user_command("DbeeCatalogRefresh", function(opts)
   pcall(vim.fn.delete, M.config.store)
   M.warm_all()
   vim.notify("dbee: catalog cache dropped")
+end
+
+vim.api.nvim_create_user_command("DbeeCatalogRefresh", function(opts)
+  M.refresh(opts.args)
 end, {
   nargs = "?",
   desc = "Refresh cached unity catalog metadata: all of it, one catalog, or one catalog.schema",

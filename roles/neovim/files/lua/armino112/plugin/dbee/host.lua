@@ -31,10 +31,13 @@ end
 
 -- what the binary on disk was built from: this patch, that upstream revision
 local function want(source, done)
-  local text = table.concat(vim.fn.readfile(patch), "\n")
+  local sum = vim.fn.sha256(table.concat(vim.fn.readfile(patch), "\n"))
   vim.system({ "git", "-C", source, "rev-parse", "HEAD" }, { text = true }, function(out)
     local rev = out.code == 0 and vim.trim(out.stdout) or "unknown"
-    done(vim.fn.sha256(text) .. " " .. rev, rev)
+    -- back to the main loop: the callback is a fast event context, no vim.fn there
+    vim.schedule(function()
+      done(sum .. " " .. rev, rev)
+    end)
   end)
 end
 
@@ -58,9 +61,7 @@ function M.build(force)
     end
 
     building = true
-    vim.schedule(function()
-      vim.notify("dbee: building the patched host")
-    end)
+    vim.notify("dbee: building the patched host")
 
     -- git init so `git apply` resolves paths against the copy, wherever it sits.
     -- the copy has no history, so hand the revision to main.version instead --

@@ -174,6 +174,12 @@ dbee.setup({
         icon_highlight = "Directory",
         text_highlight = "",
       },
+      -- nor a refresh node; drawer.lua hangs one off every connection
+      refresh = {
+        icon = "\u{f021}",
+        icon_highlight = "String",
+        text_highlight = "",
+      },
     },
   },
 
