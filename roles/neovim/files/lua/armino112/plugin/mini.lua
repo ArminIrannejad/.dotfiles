@@ -44,3 +44,9 @@ hipatterns.setup({
     hex_color = hipatterns.gen_highlighter.hex_color(),
   },
 })
+
+-- No hipatterns in oil buffers
+vim.api.nvim_create_autocmd('FileType', {
+  pattern = 'oil',
+  callback = function(args) vim.b[args.buf].minihipatterns_disable = true end,
+})
