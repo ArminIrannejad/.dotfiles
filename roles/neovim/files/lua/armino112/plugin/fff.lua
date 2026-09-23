@@ -13,6 +13,16 @@ vim.api.nvim_create_autocmd('PackChanged', {
 vim.g.fff = {
   lazy_sync = true,
   debug = { enabled = true, show_scores = true },
+  select = {
+    -- Open in the invoking window, oil (acwrite) included
+    select_window = function(buf, action)
+      if action ~= 'edit' then return nil end
+      local win = vim.api.nvim_get_current_win()
+      local bt = vim.bo[buf].buftype
+      if (bt == '' or bt == 'acwrite') and not vim.wo[win].winfixbuf then return nil end
+      return require('fff.utils').find_suitable_window()
+    end,
+  },
 }
 
 vim.keymap.set('n', '<leader>ff', function() require('fff').find_files() end)
