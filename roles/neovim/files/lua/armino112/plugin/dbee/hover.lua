@@ -195,10 +195,14 @@ function M.show()
   end)
 end
 
+function M.attach(buf)
+  vim.keymap.set("n", "K", M.show, { buffer = buf, desc = "Spark SQL function docs" })
+end
+
 vim.api.nvim_create_autocmd("FileType", {
   pattern = "sql",
   callback = function(event)
-    vim.keymap.set("n", "K", M.show, { buffer = event.buf, desc = "Spark SQL function docs" })
+    M.attach(event.buf)
   end,
 })
 
