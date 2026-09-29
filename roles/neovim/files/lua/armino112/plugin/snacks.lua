@@ -82,39 +82,6 @@ require("snacks").setup({
   explorer = { enabled = false, },
 })
 
--- classic gd, else first occurrence in file (gd skips strings, e.g. json)
-local function gd_fallback()
-  local pos = vim.api.nvim_win_get_cursor(0)
-  pcall(vim.cmd, "normal! gd")
-  if not vim.deep_equal(pos, vim.api.nvim_win_get_cursor(0)) then return end
-  local word = vim.fn.expand("<cword>")
-  if word == "" then return end
-  vim.api.nvim_win_set_cursor(0, { 1, 0 })
-  local first = vim.fn.searchpos("\\V\\<" .. vim.fn.escape(word, "\\") .. "\\>", "cnW")
-  vim.api.nvim_win_set_cursor(0, pos)
-  if first[1] == 0 then return end
-  vim.cmd("normal! m'")
-  vim.api.nvim_win_set_cursor(0, { first[1], first[2] - 1 })
-end
-
-vim.keymap.set("n", "gd", function()
-  local buf = vim.api.nvim_get_current_buf()
-  if not next(vim.lsp.get_clients({ bufnr = buf, method = "textDocument/definition" })) then
-    return gd_fallback()
-  end
-  vim.lsp.buf_request_all(buf, "textDocument/definition", function(client)
-    return vim.lsp.util.make_position_params(0, client.offset_encoding)
-  end, function(results)
-    for _, res in pairs(results) do
-      local r = res.result
-      if r and (r.uri or r.targetUri or next(r)) then
-        return Snacks.picker.lsp_definitions()
-      end
-    end
-    gd_fallback()
-  end)
-end, { desc = "Go to def" })
-
 vim.keymap.set("n", "<leader>fh", function()
   Snacks.picker.help()
 end, { desc = "Find Help Tags" })

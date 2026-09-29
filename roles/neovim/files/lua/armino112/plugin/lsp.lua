@@ -187,6 +187,7 @@ vim.diagnostic.config({
   },
 })
 
+vim.keymap.set("n", "gd", vim.lsp.buf.definition, { desc = "Go to def" })
 vim.keymap.set("n", "<leader>eq", vim.diagnostic.setloclist, {
   desc = "Diagnostics to loclist",
 })
