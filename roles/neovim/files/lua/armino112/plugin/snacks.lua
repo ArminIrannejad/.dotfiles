@@ -82,12 +82,31 @@ require("snacks").setup({
   explorer = { enabled = false, },
 })
 
-vim.keymap.set("n", "gd", function()
-  if next(vim.lsp.get_clients({ bufnr = 0, method = "textDocument/definition" })) then
-    Snacks.picker.lsp_definitions()
+-- file under cursor, else classic gd
+local function gd_fallback()
+  if vim.fn.findfile(vim.fn.expand("<cfile>")) ~= "" then
+    vim.cmd("normal! gf")
   else
     vim.cmd("normal! gd")
   end
+end
+
+vim.keymap.set("n", "gd", function()
+  local buf = vim.api.nvim_get_current_buf()
+  if not next(vim.lsp.get_clients({ bufnr = buf, method = "textDocument/definition" })) then
+    return gd_fallback()
+  end
+  vim.lsp.buf_request_all(buf, "textDocument/definition", function(client)
+    return vim.lsp.util.make_position_params(0, client.offset_encoding)
+  end, function(results)
+    for _, res in pairs(results) do
+      local r = res.result
+      if r and (r.uri or r.targetUri or next(r)) then
+        return Snacks.picker.lsp_definitions()
+      end
+    end
+    gd_fallback()
+  end)
 end, { desc = "Go to def" })
 
 vim.keymap.set("n", "<leader>fh", function()
