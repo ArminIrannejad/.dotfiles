@@ -82,13 +82,19 @@ require("snacks").setup({
   explorer = { enabled = false, },
 })
 
--- file under cursor, else classic gd
+-- classic gd, else first occurrence in file (gd skips strings, e.g. json)
 local function gd_fallback()
-  if vim.fn.findfile(vim.fn.expand("<cfile>")) ~= "" then
-    vim.cmd("normal! gf")
-  else
-    vim.cmd("normal! gd")
-  end
+  local pos = vim.api.nvim_win_get_cursor(0)
+  pcall(vim.cmd, "normal! gd")
+  if not vim.deep_equal(pos, vim.api.nvim_win_get_cursor(0)) then return end
+  local word = vim.fn.expand("<cword>")
+  if word == "" then return end
+  vim.api.nvim_win_set_cursor(0, { 1, 0 })
+  local first = vim.fn.searchpos("\\V\\<" .. vim.fn.escape(word, "\\") .. "\\>", "cnW")
+  vim.api.nvim_win_set_cursor(0, pos)
+  if first[1] == 0 then return end
+  vim.cmd("normal! m'")
+  vim.api.nvim_win_set_cursor(0, { first[1], first[2] - 1 })
 end
 
 vim.keymap.set("n", "gd", function()
