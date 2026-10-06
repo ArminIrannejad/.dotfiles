@@ -5,4 +5,6 @@ vim.pack.add({
     'https://github.com/nvim-tree/nvim-web-devicons', -- if you prefer nvim-web-devicons
     'https://github.com/MeanderingProgrammer/render-markdown.nvim',
 })
-require('render-markdown').setup({}) -- only mandatory if you want to set custom options
+require('render-markdown').setup({
+  file_types = { "markdown", "ipynb" },
+})
