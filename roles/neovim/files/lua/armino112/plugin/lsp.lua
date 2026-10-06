@@ -103,10 +103,12 @@ end)
 
 require("mason-lspconfig").setup({
   ensure_installed = {
-    "lua_ls",
     "basedpyright",
-    "ruff",
+    "clangd",
     "gopls",
+    "jsonls",
+    "lua_ls",
+    "ruff",
     "tflint",
   },
   automatic_enable = {
@@ -170,7 +172,14 @@ vim.lsp.config("tflint", {
   root_markers = { ".terraform", ".git", "*.tfvars", ".tflint.hcl" },
   capabilities = capabilities,
 })
-vim.lsp.enable("tflint")
+
+vim.lsp.config("jsonls", {
+  capabilities = capabilities,
+
+  init_options = {
+    provideFormatter = false,
+  },
+})
 
 vim.diagnostic.config({
   virtual_text = false,
@@ -186,6 +195,7 @@ vim.diagnostic.config({
     prefix = "",
   },
 })
+
 
 vim.keymap.set("n", "gd", vim.lsp.buf.definition, { desc = "Go to def" })
 vim.keymap.set("n", "<leader>eq", vim.diagnostic.setloclist, {
