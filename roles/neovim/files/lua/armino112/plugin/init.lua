@@ -10,6 +10,7 @@ local plugins = {
   "git",
   "harpoon",
   "haskell",
+  "ipynb",
   "lsp",
   "lualine",
   "mini",
