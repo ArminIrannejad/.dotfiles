@@ -37,7 +37,11 @@ worktree() {
     main=$(dirname "$common")
     repo=$(basename "$main")
 
-    # Worktrees (green) first, then branches without one.
+    local log="git -C '$main' log --oneline --color=always -15"
+    local preview="if [ -n {2} ]; then git -C {2} -c color.status=always status -sb; echo; git -C {2} log --oneline --color=always -15
+        else $log {1} -- 2>/dev/null || $log --remotes='*/'{1}; fi"
+
+    # Worktrees (green) first, then branches by last commit, remote only ones dimmed.
     mapfile -t out < <(
         {
             # Main repo stays listed when detached, e.g. mid rebase.
@@ -45,11 +49,12 @@ worktree() {
                 /^worktree /          { p = substr($0, 10); n++ }
                 /^branch /            { sub("refs/heads/", "", $2); printf "\033[32m%s\033[0m\t%s\n", $2, p }
                 /^detached/ && n == 1 { printf "\033[32m(detached)\033[0m\t%s\n", p }'
-            git -C "$main" for-each-ref --format='%(refname:lstrip=2)' refs/heads
-            git -C "$main" for-each-ref --format='%(refname:lstrip=3)' refs/remotes | grep -vx HEAD
+            git -C "$main" for-each-ref --sort=-committerdate --format='%(refname:lstrip=2)' refs/heads
+            git -C "$main" for-each-ref --sort=-committerdate --format='%(refname:lstrip=3)' refs/remotes |
+                grep -vx HEAD | awk '{ printf "\033[2m%s\033[0m\n", $0 }'
         } | awk -F'\t' '{ k = $1; gsub(/\033\[[0-9;]*m/, "", k) } !seen[k]++' |
             fzf --ansi --delimiter='\t' --with-nth=1 --print-query --expect=ctrl-x \
-                --prompt="worktree ($repo)> " --header="ctrl-x: remove worktree"
+                --border-label=" $repo " --header="ctrl-x: remove worktree" --preview="$preview"
     )
 
     query=${out[0]} key=${out[1]} line=${out[2]}
