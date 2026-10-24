@@ -4,7 +4,6 @@ vim.pack.add({
   { src = 'https://github.com/NeogitOrg/neogit' },
   { src = 'https://github.com/sindrets/diffview.nvim' },
   { src = 'https://github.com/lewis6991/gitsigns.nvim' },
-  { src = 'https://github.com/ThePrimeagen/git-worktree.nvim' },
 })
 
 vim.keymap.set("n", "<leader>gg", "<cmd>Neogit<cr>", { desc = "Show Neogit UI" })
@@ -99,60 +98,6 @@ vim.keymap.set("n", "<leader>gdC", function()
   })
 end, { desc = "Diff repo vs chosen commit" })
 
-require("git-worktree").setup({
-  change_directory_command = "cd",
-  update_on_change = true,
-  update_on_change_command = "e .",
-  clearjumps_on_change = true,
-  autopush = false,
-})
-
-local Worktree = require("git-worktree")
-
-Worktree.on_tree_change(function(op, metadata)
-  if op == Worktree.Operations.Switch then
-    vim.notify(("Worktree: %s"):format(metadata.path))
-  end
-end)
-
 vim.keymap.set("n", "<leader>gw", function()
-  local lines = vim.fn.systemlist("git worktree list")
-
-  if vim.v.shell_error ~= 0 or vim.tbl_isempty(lines) then
-    vim.notify("No worktrees found", vim.log.levels.WARN)
-    return
-  end
-
-  vim.ui.select(lines, {
-    prompt = "Worktrees",
-  }, function(choice)
-    if not choice then
-      return
-    end
-
-    local path = choice:match("^(%S+)")
-    if path then
-      Worktree.switch_worktree(path)
-    end
-  end)
+  vim.cmd("silent !tmux neww tmux-worktree " .. vim.fn.shellescape(vim.fn.getcwd()))
 end, { desc = "Worktrees" })
-
-vim.keymap.set("n", "<leader>gW", function()
-  vim.ui.input({
-    prompt = "Worktree path: ",
-  }, function(path)
-    if not path or path == "" then
-      return
-    end
-
-    vim.ui.input({
-      prompt = "Branch name: ",
-    }, function(branch)
-      if not branch or branch == "" then
-        return
-      end
-
-      Worktree.create_worktree(path, branch)
-    end)
-  end)
-end, { desc = "Create worktree" })
