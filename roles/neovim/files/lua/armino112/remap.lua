@@ -29,6 +29,7 @@ vim.keymap.set({ "n", "v" }, "<leader>d", [["_d]])
 vim.keymap.set("i", "<C-c>", "<Esc>")
 
 vim.keymap.set("n", "<C-f>", "<cmd>silent !tmux neww tmux-sessionizer<CR>")
+vim.keymap.set("n", "<C-g>", function() vim.cmd("silent !tmux neww tmux-sessionizer -w " .. vim.fn.shellescape(vim.fn.getcwd())) end)
 vim.keymap.set({ "n", "v" }, "<leader>fo", function()
   require("conform").format({ async = true, lsp_format = "fallback", })
 end, { desc = "Format file" })
