@@ -29,17 +29,46 @@ die() {
     exit 1
 }
 
+# Preview $1 (status, changes) or branch $2, with commits ahead of base $3 or recent ones.
+preview() {
+    local dir=${1:-.} ref=${2:-HEAD} base=$3 behind ahead
+    local log=(log --color=always --format='%C(yellow)%h%C(reset) %s %C(dim)%cr%C(reset)')
+    git -C "$dir" rev-parse 2>/dev/null || { ls -A "$dir"; return; }
+
+    if [[ -n $1 ]]; then
+        ref=HEAD
+        git -C "$dir" -c color.status=always status -sb | head -1
+        git -C "$dir" diff HEAD --stat --color=always 2>/dev/null
+        git -C "$dir" ls-files --others --exclude-standard | head -10 | sed 's/^/?? /'
+        echo
+    elif ! git rev-parse -q --verify "refs/heads/$ref" >/dev/null; then
+        ref=$(git for-each-ref --count=1 --format='%(refname:short)' "refs/remotes/*/$ref")
+    fi
+
+    if [[ -n $base ]]; then
+        read -r behind ahead < <(git -C "$dir" rev-list --left-right --count "$base...$ref" 2>/dev/null)
+        if (( ahead || behind )); then
+            printf '\033[1m%s ahead %s behind %s\033[0m\n\n' "$ahead" "$behind" "$base"
+        fi
+        if (( ahead )); then
+            git -C "$dir" "${log[@]}" "$base..$ref"
+            return
+        fi
+    fi
+    git -C "$dir" "${log[@]}" -15 "$ref"
+}
+
 # Pick a branch of the repo at $1; worktrees live in ~/.worktrees/<repo>/<branch>, ctrl-x removes one.
 worktree() {
-    local common main repo out query key line branch path err
+    local common main repo base out query key line branch path err
     common=$(git -C "$1" rev-parse --path-format=absolute --git-common-dir 2>/dev/null) ||
         die "Not a git repo: $1"
     main=$(dirname "$common")
     repo=$(basename "$main")
 
-    local log="git -C '$main' log --oneline --color=always -15"
-    local preview="if [ -n {2} ]; then git -C {2} -c color.status=always status -sb; echo; git -C {2} log --oneline --color=always -15
-        else $log {1} -- 2>/dev/null || $log --remotes='*/'{1}; fi"
+    cd "$main" || die "Cannot cd to $main"
+    base=$(git symbolic-ref -q --short refs/remotes/origin/HEAD ||
+        git for-each-ref --count=1 --format='%(refname:short)' refs/heads/main refs/heads/master)
 
     # Worktrees (green) first, then branches by last commit, remote only ones dimmed.
     mapfile -t out < <(
@@ -54,7 +83,7 @@ worktree() {
                 grep -vx HEAD | awk '{ printf "\033[2m%s\033[0m\n", $0 }'
         } | awk -F'\t' '{ k = $1; gsub(/\033\[[0-9;]*m/, "", k) } !seen[k]++' |
             fzf --ansi --delimiter='\t' --with-nth=1 --print-query --expect=ctrl-x \
-                --border-label=" $repo " --header="ctrl-x: remove worktree" --preview="$preview"
+                --border-label=" $repo " --header="ctrl-x: remove worktree" --preview="'$0' -p {2} {1} '$base'"
     )
 
     query=${out[0]} key=${out[1]} line=${out[2]}
@@ -94,7 +123,10 @@ worktree() {
 }
 
 name=
-if [[ $1 == -w ]]; then
+if [[ $1 == -p ]]; then
+    preview "${@:2}"
+    exit
+elif [[ $1 == -w ]]; then
     worktree "${2:-$PWD}"
 elif [[ $# -eq 1 ]]; then
     selected=$1
@@ -105,7 +137,7 @@ else
         awk -v open="$open" 'BEGIN { split(open, o, "\n"); for (i in o) s[o[i]] }
             $0 in s { sub(/[^\/]*$/, "\033[32m&\033[0m") } 1' |
         fzf --ansi --delimiter=/ --with-nth=-1 \
-            --preview='git -C {} log --oneline --color=always -15 2>/dev/null || ls -A {}')
+            --preview="'$0' -p {}")
 fi
 
 if [[ -z $selected ]]; then
