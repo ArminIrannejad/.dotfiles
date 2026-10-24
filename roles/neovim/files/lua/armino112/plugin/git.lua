@@ -99,5 +99,5 @@ vim.keymap.set("n", "<leader>gdC", function()
 end, { desc = "Diff repo vs chosen commit" })
 
 vim.keymap.set("n", "<leader>gw", function()
-  vim.cmd("silent !tmux neww tmux-worktree " .. vim.fn.shellescape(vim.fn.getcwd()))
+  vim.cmd("silent !tmux neww tmux-sessionizer -w " .. vim.fn.shellescape(vim.fn.getcwd()))
 end, { desc = "Worktrees" })

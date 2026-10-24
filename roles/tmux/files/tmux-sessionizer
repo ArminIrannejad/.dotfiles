@@ -20,7 +20,76 @@ hydrate() {
     fi
 }
 
-if [[ $# -ge 1 ]]; then
+die() {
+    if [[ -n $TMUX ]]; then
+        tmux display-message "$1"
+    else
+        echo "$1" >&2
+    fi
+    exit 1
+}
+
+# Pick a branch of the repo at $1; worktrees live in ~/.worktrees/<repo>/<branch>, ctrl-x removes one.
+worktree() {
+    local common main repo out query key line branch path err
+    common=$(git -C "$1" rev-parse --path-format=absolute --git-common-dir 2>/dev/null) ||
+        die "Not a git repo: $1"
+    main=$(dirname "$common")
+    repo=$(basename "$main")
+
+    # Worktrees (green) first, then branches without one.
+    mapfile -t out < <(
+        {
+            git -C "$main" worktree list --porcelain | awk '
+                /^worktree / { p = substr($0, 10) }
+                /^branch /   { sub("refs/heads/", "", $2); printf "\033[32m%s\033[0m\t%s\n", $2, p }'
+            git -C "$main" for-each-ref --format='%(refname:lstrip=2)' refs/heads
+            git -C "$main" for-each-ref --format='%(refname:lstrip=3)' refs/remotes | grep -vx HEAD
+        } | awk -F'\t' '{ k = $1; gsub(/\033\[[0-9;]*m/, "", k) } !seen[k]++' |
+            fzf --ansi --delimiter='\t' --with-nth=1 --print-query --expect=ctrl-x \
+                --prompt="worktree ($repo)> " --header="ctrl-x: remove worktree"
+    )
+
+    query=${out[0]} key=${out[1]} line=${out[2]}
+    branch=${line%%$'\t'*}
+    path=
+    [[ $line == *$'\t'* ]] && path=${line#*$'\t'}
+
+    if [[ -z $line ]]; then
+        [[ -z $query ]] && exit 0
+        branch=$query
+    fi
+
+    name=${repo}_${branch}
+
+    if [[ $key == ctrl-x ]]; then
+        [[ -n $path && $path != "$main" ]] || die "Not a removable worktree: $branch"
+        err=$(git -C "$main" worktree remove "$path" 2>&1) || die "$err"
+        tmux kill-session -t "=$(echo "$name" | sed 's/^\.//' | tr ./: _)" 2>/dev/null
+        exit 0
+    fi
+
+    if [[ $path == "$main" ]]; then
+        selected=$main name=
+        return
+    fi
+
+    if [[ -z $path ]]; then
+        path=$HOME/.worktrees/${repo#.}/$branch
+        if [[ -n $line ]]; then
+            err=$(git -C "$main" worktree add "$path" "$branch" 2>&1) || die "$err"
+        else
+            err=$(git -C "$main" worktree add -b "$branch" "$path" 2>&1) || die "$err"
+        fi
+    fi
+
+    selected=$path
+}
+
+name=
+if [[ $1 == -w ]]; then
+    worktree "${2:-$PWD}"
+elif [[ $# -eq 1 ]]; then
     selected=$1
 else
     selected=$(find ~/ ~/personal ~/work -mindepth 1 -maxdepth 1 -type d \( ! -name '.*' -o -path ~/.dotfiles \) | fzf --delimiter=/ --with-nth=-1)
@@ -30,7 +99,7 @@ if [[ -z $selected ]]; then
     exit 0
 fi
 
-selected_name=$(echo "${2:-$(basename "$selected")}" | sed 's/^\.//' | tr ./: _)
+selected_name=$(echo "${name:-$(basename "$selected")}" | sed 's/^\.//' | tr ./: _)
 
 # .foo and foo strip to the same name; keep the dot for whichever loses the race.
 if has_session "$selected_name" &&

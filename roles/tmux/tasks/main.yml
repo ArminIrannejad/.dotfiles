@@ -34,10 +34,3 @@
     dest: "{{ ansible_facts['user_dir'] }}/tmux-sessionizer"
     state: link
     force: true
-
-- name: "Tmux | Link tmux-worktree"
-  ansible.builtin.file:
-    src: "{{ role_path }}/files/tmux-worktree"
-    dest: "{{ bin_dir }}/tmux-worktree"
-    state: link
-    force: true
