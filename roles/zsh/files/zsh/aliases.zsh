@@ -25,6 +25,7 @@ alias vim='nvim'
 alias activate="source .venv/bin/activate"
 if command -v tmux-sessionizer >/dev/null 2>&1; then
   bindkey -s ^f "tmux-sessionizer\n"
+  bindkey -s ^g "tmux-sessionizer -w\n"
 fi
 alias time="/usr/bin/time -f $'\n\033[1;34mreal\033[0m %E\n\033[1;32muser\033[0m %U\n\033[1;31msys \033[0m %S'"
 

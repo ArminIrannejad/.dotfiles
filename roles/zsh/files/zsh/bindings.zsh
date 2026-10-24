@@ -25,5 +25,7 @@ zvm_after_init() {
   bindkey -M vicmd 'j' history-substring-search-down
   bindkey -M viins -s '^F' "tmux-sessionizer\n"
   bindkey -M vicmd -s '^F' "tmux-sessionizer\n"
+  bindkey -M viins -s '^G' "tmux-sessionizer -w\n"
+  bindkey -M vicmd -s '^G' "tmux-sessionizer -w\n"
 }
 
