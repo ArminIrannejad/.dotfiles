@@ -92,7 +92,7 @@ if [[ $1 == -w ]]; then
 elif [[ $# -eq 1 ]]; then
     selected=$1
 else
-    selected=$({ echo ~/.dotfiles; find ~/personal ~/work -mindepth 1 -maxdepth 1 -type d ! -name '.*'; } | fzf --delimiter=/ --with-nth=-1)
+    selected=$(find ~/.dotfiles ~/personal/* ~/work/* -maxdepth 0 -type d | fzf --delimiter=/ --with-nth=-1)
 fi
 
 if [[ -z $selected ]]; then
