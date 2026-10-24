@@ -20,7 +20,7 @@ hydrate() {
     fi
 }
 
-if [[ $# -eq 1 ]]; then
+if [[ $# -ge 1 ]]; then
     selected=$1
 else
     selected=$(find ~/ ~/personal ~/work -mindepth 1 -maxdepth 1 -type d \( ! -name '.*' -o -path ~/.dotfiles \) | fzf --delimiter=/ --with-nth=-1)
@@ -30,7 +30,7 @@ if [[ -z $selected ]]; then
     exit 0
 fi
 
-selected_name=$(basename "$selected" | sed 's/^\.//' | tr . _)
+selected_name=$(echo "${2:-$(basename "$selected")}" | sed 's/^\.//' | tr ./: _)
 
 # .foo and foo strip to the same name; keep the dot for whichever loses the race.
 if has_session "$selected_name" &&
