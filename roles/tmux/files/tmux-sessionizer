@@ -99,7 +99,13 @@ if [[ $1 == -w ]]; then
 elif [[ $# -eq 1 ]]; then
     selected=$1
 else
-    selected=$(find ~/.dotfiles ~/personal/* ~/work/* -maxdepth 0 -type d | fzf --delimiter=/ --with-nth=-1)
+    # Dirs with a running session in green.
+    open=$(tmux list-sessions -F '#{session_path}' 2>/dev/null)
+    selected=$(find ~/.dotfiles ~/personal/* ~/work/* -maxdepth 0 -type d |
+        awk -v open="$open" 'BEGIN { split(open, o, "\n"); for (i in o) s[o[i]] }
+            $0 in s { sub(/[^\/]*$/, "\033[32m&\033[0m") } 1' |
+        fzf --ansi --delimiter=/ --with-nth=-1 \
+            --preview='git -C {} log --oneline --color=always -15 2>/dev/null || ls -A {}')
 fi
 
 if [[ -z $selected ]]; then
