@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+# Open a session per worktree in ~/.worktrees/<repo>/<branch>; ctrl-x removes one.
+
+die() {
+    if [[ -n $TMUX ]]; then
+        tmux display-message "$1"
+    else
+        echo "$1" >&2
+    fi
+    exit 1
+}
+
+common=$(git -C "${1:-$PWD}" rev-parse --path-format=absolute --git-common-dir 2>/dev/null) ||
+    die "Not a git repo: ${1:-$PWD}"
+main=$(dirname "$common")
+repo=$(basename "$main")
+
+# Worktrees (green) first, then branches without one.
+mapfile -t out < <(
+    {
+        git -C "$main" worktree list --porcelain | awk '
+            /^worktree / { p = substr($0, 10) }
+            /^branch /   { sub("refs/heads/", "", $2); printf "\033[32m%s\033[0m\t%s\n", $2, p }'
+        git -C "$main" for-each-ref --format='%(refname:lstrip=2)' refs/heads
+        git -C "$main" for-each-ref --format='%(refname:lstrip=3)' refs/remotes | grep -vx HEAD
+    } | awk -F'\t' '{ k = $1; gsub(/\033\[[0-9;]*m/, "", k) } !seen[k]++' |
+        fzf --ansi --delimiter='\t' --with-nth=1 --print-query --expect=ctrl-x \
+            --prompt="worktree ($repo)> " --header="ctrl-x: remove worktree"
+)
+
+query=${out[0]} key=${out[1]} line=${out[2]}
+branch=${line%%$'\t'*}
+path=
+[[ $line == *$'\t'* ]] && path=${line#*$'\t'}
+
+if [[ -z $line ]]; then
+    [[ -z $query ]] && exit 0
+    branch=$query
+fi
+
+name=$(echo "${repo}_${branch}" | sed 's/^\.//' | tr ./: _)
+
+if [[ $key == ctrl-x ]]; then
+    [[ -n $path && $path != "$main" ]] || die "Not a removable worktree: $branch"
+    err=$(git -C "$main" worktree remove "$path" 2>&1) || die "$err"
+    tmux kill-session -t "=$name" 2>/dev/null
+    exit 0
+fi
+
+[[ $path == "$main" ]] && exec tmux-sessionizer "$main"
+
+if [[ -z $path ]]; then
+    path=$HOME/.worktrees/${repo#.}/$branch
+    if [[ -n $line ]]; then
+        err=$(git -C "$main" worktree add "$path" "$branch" 2>&1) || die "$err"
+    else
+        err=$(git -C "$main" worktree add -b "$branch" "$path" 2>&1) || die "$err"
+    fi
+fi
+
+exec tmux-sessionizer "$path" "$name"
