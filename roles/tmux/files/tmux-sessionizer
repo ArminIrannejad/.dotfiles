@@ -40,9 +40,11 @@ worktree() {
     # Worktrees (green) first, then branches without one.
     mapfile -t out < <(
         {
+            # Main repo stays listed when detached, e.g. mid rebase.
             git -C "$main" worktree list --porcelain | awk '
-                /^worktree / { p = substr($0, 10) }
-                /^branch /   { sub("refs/heads/", "", $2); printf "\033[32m%s\033[0m\t%s\n", $2, p }'
+                /^worktree /          { p = substr($0, 10); n++ }
+                /^branch /            { sub("refs/heads/", "", $2); printf "\033[32m%s\033[0m\t%s\n", $2, p }
+                /^detached/ && n == 1 { printf "\033[32m(detached)\033[0m\t%s\n", p }'
             git -C "$main" for-each-ref --format='%(refname:lstrip=2)' refs/heads
             git -C "$main" for-each-ref --format='%(refname:lstrip=3)' refs/remotes | grep -vx HEAD
         } | awk -F'\t' '{ k = $1; gsub(/\033\[[0-9;]*m/, "", k) } !seen[k]++' |
