@@ -183,6 +183,11 @@ dbee.setup({
       trigger = { icon = "\u{f0e7}", icon_highlight = "Special", text_highlight = "" },
       plsql_type = { icon = "\u{f1b2}", icon_highlight = "Type", text_highlight = "" },
       plsql_type_body = { icon = "\u{f1b3}", icon_highlight = "Type", text_highlight = "" },
+      -- and apex.lua hangs the apex apps off the connection
+      apex = { icon = "\u{f0e8}", icon_highlight = "Directory", text_highlight = "" },
+      apex_app = { icon = "\u{f2d0}", icon_highlight = "Directory", text_highlight = "" },
+      apex_page = { icon = "\u{f15b}", icon_highlight = "Directory", text_highlight = "" },
+      apex_component = { icon = "\u{f121}", icon_highlight = "Function", text_highlight = "" },
     },
   },
 
@@ -352,6 +357,7 @@ require("armino112.plugin.dbee.limit")
 require("armino112.plugin.dbee.gate")
 require("armino112.plugin.dbee.drawer")
 require("armino112.plugin.dbee.oracle")
+require("armino112.plugin.dbee.apex")
 require("armino112.plugin.dbee.cmp")
 require("armino112.plugin.dbee.hover")
 
