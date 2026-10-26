@@ -2,6 +2,10 @@
 -- comes from all_objects here instead, folded into each schema as folders the
 -- way sql developer shows them, and a unit opens from all_source in a buffer.
 --
+-- a unit opens as oracle://<connection>/OWNER.NAME.ext, so :e refetches it and
+-- :w compiles it through plsql.lua. it wipes when it leaves its window, so :q
+-- on unsaved edits refuses and :q! drops them without touching the server.
+--
 -- the folders go into the drawer's nodes, not the structure: completion reads
 -- the structure too, and would offer `packages` as a table. the drawer builds
 -- its nodes synchronously while queries are async, so the first draw goes out
@@ -32,6 +36,11 @@ local KINDS = {
   ["TYPE BODY"] = { folder = "type bodies", order = 7, type = "plsql_type_body", ext = "tpb" },
 }
 
+local by_ext = {}
+for object_type, kind in pairs(KINDS) do
+  by_ext[kind.ext] = object_type
+end
+
 -- same schemas upstream lists tables for
 local UNITS = [[
 SELECT owner, object_name, object_type
@@ -61,8 +70,8 @@ end
 pcall(function()
   require("dbee.api.core").register_event_listener("call_state_changed", function(data)
     local call = data and data.call
-    local done = call and pending[call.id]
-    if not done then
+    local entry = call and pending[call.id]
+    if not entry then
       return
     end
 
@@ -70,8 +79,12 @@ pcall(function()
       return -- still in flight
     end
     pending[call.id] = nil
+    local done = entry.done
     if call.state ~= "archived" then
       return done(nil, call.error)
+    end
+    if not entry.rows then
+      return done(true)
     end
 
     local path = vim.fn.tempname()
@@ -87,12 +100,13 @@ pcall(function()
 end)
 
 --- @param on_done fun(rows: table[]|nil, err: string|nil)
-function M.query(id, sql, on_done)
+--- @param opts? { rows: boolean } rows = false runs it for effect: on_done gets true or nil, err
+function M.query(id, sql, on_done, opts)
   local ok, call = pcall(require("dbee.api.core").connection_execute, id, sql)
   if not ok or type(call) ~= "table" or not call.id then
-    return on_done(nil)
+    return on_done(nil, not ok and tostring(call) or nil)
   end
-  pending[call.id] = on_done
+  pending[call.id] = { done = on_done, rows = not (opts and opts.rows == false) }
 
   vim.defer_fn(function()
     if pending[call.id] then
@@ -108,7 +122,17 @@ function M.redraw()
   end)
 end
 
--- one tab per title, refilled when opened again
+local function focus(buf)
+  local win = vim.fn.win_findbuf(buf)[1]
+  if win then
+    vim.api.nvim_set_current_win(win)
+  else
+    vim.cmd.tabnew()
+    vim.api.nvim_win_set_buf(0, buf)
+  end
+end
+
+-- read only views (apex, ddl): one tab per title, refilled when opened again
 function M.show(title, lines, filetype)
   local buf = vim.fn.bufnr(title)
   if buf == -1 then
@@ -119,13 +143,7 @@ function M.show(title, lines, filetype)
     vim.bo[buf].swapfile = false
     vim.api.nvim_buf_set_name(buf, title)
   else
-    local win = vim.fn.win_findbuf(buf)[1]
-    if win then
-      vim.api.nvim_set_current_win(win)
-    else
-      vim.cmd.tabnew()
-      vim.api.nvim_win_set_buf(0, buf)
-    end
+    focus(buf)
   end
 
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
@@ -191,26 +209,91 @@ pcall(function()
   table.insert(require("armino112.plugin.dbee.drawer").refreshers, M.forget)
 end)
 
-local function open(id, owner, name, object_type)
-  local sql = SOURCE:format(M.literal(owner), M.literal(name), object_type)
-  M.query(id, sql, function(rows, err)
-    if not rows then
-      return vim.notify("dbee: no source for " .. name .. ": " .. (err or "no result"), vim.log.levels.WARN)
+function M.uri(id, owner, name, object_type)
+  return ("oracle://%s/%s.%s.%s"):format(id, owner, name, KINDS[object_type].ext)
+end
+
+--- @return { conn: string, owner: string, name: string, type: string }|nil
+function M.parse(uri)
+  local id, owner, name, ext = uri:match("^oracle://([^/]+)/([^%./]+)%.([^/]+)%.(%w+)$")
+  if id and by_ext[ext] then
+    return { conn = id, owner = owner, name = name, type = by_ext[ext] }
+  end
+end
+
+local opened = {} -- uri -> callbacks waiting on the source
+
+local function read(buf)
+  local uri = vim.api.nvim_buf_get_name(buf)
+  local unit = M.parse(uri)
+  if not unit then
+    return vim.notify("dbee: not an oracle unit: " .. uri, vim.log.levels.ERROR)
+  end
+  vim.bo[buf].buftype = "acwrite"
+  vim.bo[buf].bufhidden = "wipe"
+  vim.bo[buf].swapfile = false
+
+  local function settle(ok)
+    for _, cb in ipairs(opened[uri] or {}) do
+      cb(ok and buf or nil)
+    end
+    opened[uri] = nil
+  end
+
+  local sql = SOURCE:format(M.literal(unit.owner), M.literal(unit.name), unit.type)
+  M.query(unit.conn, sql, function(rows, err)
+    if not vim.api.nvim_buf_is_valid(buf) then
+      return settle(false)
     end
 
     local text = {}
-    for _, row in ipairs(rows) do
+    for _, row in ipairs(rows or {}) do
       text[#text + 1] = row.TEXT or ""
     end
     local lines = M.lines(table.concat(text))
     if #lines == 0 then
-      return vim.notify("dbee: " .. name .. " has no visible source", vim.log.levels.WARN)
+      vim.notify(("dbee: no source for %s.%s: %s"):format(unit.owner, unit.name, err or "not visible"), vim.log.levels.WARN)
+      return settle(false)
     end
 
     -- all_source starts at the unit header, so make it runnable again
     lines[1] = "CREATE OR REPLACE " .. lines[1]:gsub("^%s+", "")
-    M.show(("%s.%s.%s"):format(owner, name, KINDS[object_type].ext), lines)
+    vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+    vim.bo[buf].modified = false
+    vim.bo[buf].filetype = "plsql"
+    vim.b[buf].dbee_oracle = unit
+    settle(true)
   end)
+end
+
+vim.api.nvim_create_autocmd("BufReadCmd", {
+  pattern = "oracle://*",
+  callback = function(args)
+    read(args.buf)
+  end,
+})
+
+vim.api.nvim_create_autocmd("BufWriteCmd", {
+  pattern = "oracle://*",
+  callback = function(args)
+    require("armino112.plugin.dbee.plsql").compile(args.buf)
+  end,
+})
+
+--- @param on_open? fun(buf: integer|nil) once the source is in, nil when it never came
+function M.open(id, owner, name, object_type, on_open)
+  local uri = M.uri(id, owner, name, object_type)
+  local buf = vim.fn.bufnr(uri)
+  if buf ~= -1 and vim.api.nvim_buf_is_loaded(buf) and vim.b[buf].dbee_oracle then
+    focus(buf) -- already read; unsaved edits stay
+    return on_open and on_open(buf)
+  end
+
+  if on_open then
+    opened[uri] = opened[uri] or {}
+    table.insert(opened[uri], on_open)
+  end
+  vim.cmd.tabedit(vim.fn.fnameescape(uri))
 end
 
 local function folders(id, schema_id, owner, by_kind)
@@ -226,7 +309,7 @@ local function folders(id, schema_id, owner, by_kind)
         schema = owner,
         type = kind.type,
         action_1 = function()
-          open(id, owner, name, object_type)
+          M.open(id, owner, name, object_type)
         end,
       })
     end

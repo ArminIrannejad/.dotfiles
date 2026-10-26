@@ -16,6 +16,7 @@ local commands = {
   "DbeeCatalog",
   "DbeeCatalogRefresh",
   "DbeeCmpRefresh",
+  "DbeeCompile",
   "DbeeDoc",
   "DbeeGate",
   "DbeeHostBuild",

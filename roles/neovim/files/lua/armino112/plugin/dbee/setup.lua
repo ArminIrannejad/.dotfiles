@@ -358,6 +358,7 @@ require("armino112.plugin.dbee.gate")
 require("armino112.plugin.dbee.drawer")
 require("armino112.plugin.dbee.oracle")
 require("armino112.plugin.dbee.apex")
+require("armino112.plugin.dbee.plsql")
 require("armino112.plugin.dbee.cmp")
 require("armino112.plugin.dbee.hover")
 
