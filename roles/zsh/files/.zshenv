@@ -39,5 +39,8 @@ fi
 export GPG_TTY="$(tty 2>/dev/null || true)"
 export STARSHIP_CONFIG="$XDG_CONFIG_HOME/starship.toml"
 
+# Spark Connect progress bar for databricks-connect
+export SPARK_CONNECT_PROGRESS_BAR_ENABLED=1
+
 
 # . "$HOME/.cargo/env"
