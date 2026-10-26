@@ -15,6 +15,25 @@ require("conform").setup({
     json = { "prettier" },
     jsonc = { "prettier" },
     yaml = { "prettier" },
+    plsql = { "sqlcl" }, -- sql joins in from dbee/plsql.lua while on oracle
+  },
+
+  formatters = {
+    -- oracle's own formatter, the one sql developer uses. it only formats files,
+    -- so round trip the buffer through one, and never hand back an empty result
+    sqlcl = {
+      command = "sh",
+      args = {
+        "-c",
+        [[f=$(mktemp --suffix=.sql) && cat > "$f" &&
+          printf 'format file "%s" "%s.out"\nexit\n' "$f" "$f" | sql -S /nolog >/dev/null 2>&1;
+          [ -s "$f.out" ] && cat "$f.out"; s=$?; rm -f "$f" "$f.out"; exit $s]],
+      },
+      stdin = true,
+      condition = function()
+        return vim.fn.executable("sql") == 1
+      end,
+    },
   },
 })
 
