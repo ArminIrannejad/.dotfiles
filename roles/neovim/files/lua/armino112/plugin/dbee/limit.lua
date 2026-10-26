@@ -3,9 +3,9 @@
 -- LIMIT is unambiguously valid, send one, and let the engine stop instead.
 --
 -- unambiguously is doing the work. the statement has to be a plain select, on a
--- dialect that spells its cap `LIMIT`, with nothing after the select list that
--- a LIMIT cannot follow. anything else -- sqlserver's TOP, oracle's FETCH
--- FIRST, EXPLAIN, DESCRIBE, the non-sql adapters -- is left to the host cap.
+-- dialect with a trailing cap (`LIMIT`, or oracle's `FETCH FIRST`), with nothing
+-- after the select list that cap cannot follow. anything else -- sqlserver's
+-- TOP, EXPLAIN, DESCRIBE, the non-sql adapters -- is left to the host cap.
 -- `no_limit` in the query opts out of both, silently.
 
 local ok_handler, Handler = pcall(require, "dbee.handler")
@@ -21,20 +21,22 @@ M.config = {
   marker = "no_limit",
 }
 
--- adapters that take a trailing LIMIT, by every alias they register under
+-- adapters that take a trailing cap, by every alias they register under
+local LIMIT = "LIMIT %d"
 local dialects = {
-  bigquery = true,
-  clickhouse = true,
-  databricks = true,
-  duck = true,
-  duckdb = true,
-  mysql = true,
-  pg = true,
-  postgres = true,
-  postgresql = true,
-  redshift = true,
-  sqlite = true,
-  sqlite3 = true,
+  bigquery = LIMIT,
+  clickhouse = LIMIT,
+  databricks = LIMIT,
+  duck = LIMIT,
+  duckdb = LIMIT,
+  mysql = LIMIT,
+  oracle = "FETCH FIRST %d ROWS ONLY", -- 12c and up
+  pg = LIMIT,
+  postgres = LIMIT,
+  postgresql = LIMIT,
+  redshift = LIMIT,
+  sqlite = LIMIT,
+  sqlite3 = LIMIT,
 }
 
 -- blank the contents of comments, string literals and quoted identifiers so the
@@ -136,14 +138,14 @@ local skips = {
 }
 
 --- @param id string connection id
---- @return boolean does this connection's dialect take a trailing LIMIT?
-local function pushes_down(id)
+--- @return string|nil the trailing cap this connection's dialect takes
+local function cap(id)
   local ok, core = pcall(require, "dbee.api.core")
   if not ok then
-    return false
+    return nil
   end
   local got, params = pcall(core.connection_get_params, id)
-  return got and type(params) == "table" and dialects[params.type] == true
+  return got and type(params) == "table" and dialects[params.type] or nil
 end
 
 --- @param id string connection id
@@ -172,12 +174,13 @@ function M.apply(id, query)
     end
   end
 
-  if not pushes_down(id) then
+  local clause = cap(id)
+  if not clause then
     return nil
   end
 
   -- run_file hands over the whole buffer, so more than one statement is not
-  -- something a single trailing LIMIT can bound
+  -- something a single trailing cap can bound
   local tail = nil
   local at = 1
   while true do
@@ -196,7 +199,7 @@ function M.apply(id, query)
   end
 
   local cut = (tail or #query + 1) - 1
-  return query:sub(1, cut) .. "\nLIMIT " .. rows .. query:sub(cut + 1)
+  return query:sub(1, cut) .. "\n" .. clause:format(rows) .. query:sub(cut + 1)
 end
 
 local connection_execute = Handler.connection_execute
