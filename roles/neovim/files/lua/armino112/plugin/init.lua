@@ -1,5 +1,6 @@
 local plugins = {
   "abolish",
+  "bufferline",
   "colors",
   "compile",
   "csv",
