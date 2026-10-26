@@ -22,6 +22,9 @@ M.config = {
   refresh_debounce_ms = 400,
 }
 
+-- other caches behind the tree, dropped by the same refresh node
+M.refreshers = {}
+
 local wanted = false
 local refresh_pending = false
 
@@ -157,6 +160,9 @@ pcall(function()
       action_1 = function(cb)
         if serving(id) then
           Catalog.refresh()
+        end
+        for _, forget in ipairs(M.refreshers) do
+          pcall(forget, id)
         end
         cb() -- a connection the cache does not serve refetches from the driver
       end,
