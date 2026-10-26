@@ -1,0 +1,3 @@
+---
+- name: "Sqlcl | Ubuntu | Install from upstream zip"
+  ansible.builtin.include_tasks: install_zip.yml

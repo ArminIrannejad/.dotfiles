@@ -1,0 +1,5 @@
+---
+- name: "Sqlcl | MacOSX | Install sqlcl"
+  community.general.homebrew_cask:
+    name: sqlcl
+    state: present

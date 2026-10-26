@@ -36,6 +36,7 @@ default_roles:
   - tree
   # - tuicr
   - unzip
+  - sqlcl # after java and unzip
   - uv
   - python_dev
   - wget
@@ -65,3 +66,4 @@ rust_components:
 
 config_dir: "{{ ansible_facts['env']['HOME'] }}/.config"
 bin_dir: "{{ ansible_facts['env']['HOME'] }}/.local/bin"
+sqlcl_dir: "{{ ansible_facts['env']['HOME'] }}/.local/share/sqlcl"

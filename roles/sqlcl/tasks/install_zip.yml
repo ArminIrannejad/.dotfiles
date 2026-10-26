@@ -1,0 +1,49 @@
+---
+# SQLcl only ships as a zip from Oracle. It is plain java, so it unpacks into
+# the user's data dir and needs no sudo; the java role provides the runtime.
+
+- name: "Sqlcl | {{ ansible_facts['distribution'] }} | Check if sqlcl is installed"
+  ansible.builtin.stat:
+    path: "{{ sqlcl_dir }}/bin/sql"
+  register: sqlcl_installed
+
+- name: "Sqlcl | {{ ansible_facts['distribution'] }} | Install"
+  when: not sqlcl_installed.stat.exists
+  block:
+    - name: "Sqlcl | {{ ansible_facts['distribution'] }} | Ensure data directory exists"
+      ansible.builtin.file:
+        path: "{{ sqlcl_dir | dirname }}"
+        state: directory
+        mode: "0755"
+
+    - name: "Sqlcl | {{ ansible_facts['distribution'] }} | Download latest release"
+      ansible.builtin.get_url:
+        url: https://download.oracle.com/otn_software/java/sqldeveloper/sqlcl-latest.zip
+        dest: /tmp/sqlcl-latest.zip
+        mode: "0644"
+        force: true
+
+    - name: "Sqlcl | {{ ansible_facts['distribution'] }} | Extract"
+      ansible.builtin.unarchive:
+        src: /tmp/sqlcl-latest.zip
+        dest: "{{ sqlcl_dir | dirname }}"
+        remote_src: true
+
+    - name: "Sqlcl | {{ ansible_facts['distribution'] }} | Remove download"
+      ansible.builtin.file:
+        path: /tmp/sqlcl-latest.zip
+        state: absent
+
+- name: "Sqlcl | {{ ansible_facts['distribution'] }} | Ensure bin directory exists"
+  ansible.builtin.file:
+    path: "{{ bin_dir }}"
+    state: directory
+    mode: "0755"
+
+# `sql` is what oracle calls it, and what nvim's formatter looks for
+- name: "Sqlcl | {{ ansible_facts['distribution'] }} | Link sql onto PATH"
+  ansible.builtin.file:
+    src: "{{ sqlcl_dir }}/bin/sql"
+    dest: "{{ bin_dir }}/sql"
+    state: link
+    force: true
