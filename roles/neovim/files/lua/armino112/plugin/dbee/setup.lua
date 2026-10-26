@@ -174,6 +174,15 @@ dbee.setup({
         icon_highlight = "String",
         text_highlight = "",
       },
+      -- nor plsql; oracle.lua folds that into each schema
+      folder = { icon = "\u{f07b}", icon_highlight = "Directory", text_highlight = "" },
+      package = { icon = "\u{f187}", icon_highlight = "Function", text_highlight = "" },
+      package_body = { icon = "\u{f1c9}", icon_highlight = "Function", text_highlight = "" },
+      procedure = { icon = "\u{f013}", icon_highlight = "Function", text_highlight = "" },
+      ["function"] = { icon = "\u{f121}", icon_highlight = "Function", text_highlight = "" },
+      trigger = { icon = "\u{f0e7}", icon_highlight = "Special", text_highlight = "" },
+      plsql_type = { icon = "\u{f1b2}", icon_highlight = "Type", text_highlight = "" },
+      plsql_type_body = { icon = "\u{f1b3}", icon_highlight = "Type", text_highlight = "" },
     },
   },
 
@@ -342,6 +351,7 @@ end)
 require("armino112.plugin.dbee.limit")
 require("armino112.plugin.dbee.gate")
 require("armino112.plugin.dbee.drawer")
+require("armino112.plugin.dbee.oracle")
 require("armino112.plugin.dbee.cmp")
 require("armino112.plugin.dbee.hover")
 
