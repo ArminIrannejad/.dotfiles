@@ -67,6 +67,3 @@ vim.keymap.set("n", "<leader>bd", function()
   load().drawer_toggle()
 end, { silent = true, desc = "Toggle dbee drawer" })
 
-vim.keymap.set("n", "<leader>bl", function()
-  load().log_toggle()
-end, { silent = true, desc = "Toggle dbee call log" })
