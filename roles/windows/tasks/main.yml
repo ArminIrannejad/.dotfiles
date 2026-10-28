@@ -1,0 +1,42 @@
+---
+# Windows apps can't follow WSL symlinks, so configs are copied
+- name: "{{ role_name | capitalize }} | Deploy Windows configs"
+  when:
+    - ansible_host_environment_is_wsl
+    - ps_interop.rc | default(1) == 0
+  block:
+    - name: "{{ role_name | capitalize }} | Resolve Windows folders"
+      ansible.builtin.shell:
+        cmd: >-
+          powershell.exe -NoProfile -Command
+          '[Environment]::GetFolderPath("UserProfile"); [Environment]::GetFolderPath("MyDocuments")'
+          | tr -d '\r' | while IFS= read -r p; do wslpath "$p"; done
+      register: windows_folders
+      changed_when: false
+      check_mode: false
+
+    - name: "{{ role_name | capitalize }} | Set Windows folders"
+      ansible.builtin.set_fact:
+        windows_home: "{{ windows_folders.stdout_lines[0] }}"
+        windows_documents: "{{ windows_folders.stdout_lines[1] }}"
+
+    - name: "{{ role_name | capitalize }} | Ensure config directories exist"
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+      loop:
+        - "{{ windows_home }}/.glzr/glazewm"
+        - "{{ windows_documents }}/AutoHotkey"
+
+    - name: "{{ role_name | capitalize }} | Copy GlazeWM config"
+      ansible.builtin.copy:
+        src: glazewm/config.yaml
+        dest: "{{ windows_home }}/.glzr/glazewm/config.yaml"
+
+    - name: "{{ role_name | capitalize }} | Copy AutoHotkey scripts"
+      ansible.builtin.copy:
+        src: "ahk/{{ item }}"
+        dest: "{{ windows_documents }}/AutoHotkey/{{ item }}"
+      loop:
+        - capslockholdandtap.ahk
+        - real-prog-dvorak.ahk

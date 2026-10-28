@@ -40,6 +40,7 @@ default_roles:
   - uv
   - python_dev
   - wget
+  - windows # wsl only
   - zoxide
   - zsh
 
