@@ -21,6 +21,7 @@ local plugins = {
   "quicker",
   "render-md",
   "showkeys",
+  "smear_cursor",
   "snacks",
   "tarminal",
   "treesitter",
