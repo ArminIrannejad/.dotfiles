@@ -1,10 +1,12 @@
 -- the go host drains a whole result set into memory before it draws the first
--- page and never evicts it, so one unbounded select is gigabytes of rss.
+-- page and never evicts it, so one unbounded select is gigabytes of rss. the
+-- only knob nvim has over that from out here is the query text, and rewriting
+-- the query is wrong for every dialect that has no trailing LIMIT.
 --
--- so bound the drain instead: host.patch stops core.Result:SetIter once the
--- rows it holds pass DBEE_MAX_MEMORY and closes the stream. the engine still
--- runs the whole query, but the host stops holding the answer, and no query
--- text gets rewritten. `no_limit` in a query opts out.
+-- so bound the drain instead: host.patch stops core.Result:SetIter at
+-- DBEE_MAX_ROWS rows and closes the stream. the engine still runs the whole
+-- query -- nothing is pushed down -- but the host stops holding the answer.
+-- limit.lua still pushes a LIMIT down where the dialect makes that free.
 --
 -- the patch means building the host instead of downloading it. build from a
 -- copy, not in place, so vim.pack still sees a clean checkout to pull into.
@@ -12,7 +14,7 @@
 local M = {}
 
 M.config = {
-  memory = "1GiB", -- per result, "off" for none
+  rows = 10000,
   dir = vim.fn.stdpath("cache") .. "/dbee-build",
 }
 
@@ -100,7 +102,7 @@ function M.build(force)
 end
 
 function M.setup()
-  vim.env.DBEE_MAX_MEMORY = M.config.memory
+  vim.env.DBEE_MAX_ROWS = tostring(M.config.rows)
 
   vim.api.nvim_create_autocmd("PackChanged", {
     callback = function(ev)

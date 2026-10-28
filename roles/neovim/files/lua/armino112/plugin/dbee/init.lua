@@ -20,6 +20,7 @@ local commands = {
   "DbeeDoc",
   "DbeeGate",
   "DbeeHostBuild",
+  "DbeeLimit",
   "DbeeMem",
   "DbeeStart",
   "DbeeSweep",

@@ -1,45 +1,5 @@
-diff --git a/core/builders/next.go b/core/builders/next.go
-index 3c20ba0..27c897e 100644
---- a/core/builders/next.go
-+++ b/core/builders/next.go
-@@ -69,6 +69,10 @@ func NextNil() (func() (core.Row, error), func() bool) {
- 	return next, hasNext
- }
- 
-+// how long a yield waits for a reader before giving the row up. only a
-+// consumer that has stopped reading altogether ever waits this long.
-+var abandonAfter = 60 * time.Second
-+
- // closeOnce closes the channel if it isn't already closed.
- func closeOnce[T any](ch chan T) {
- 	select {
-@@ -95,9 +99,20 @@ func NextYield(fn func(yield func(...any)) error) (func() (core.Row, error), fun
- 			close(errorsCh)
- 		}()
- 
-+		// a capped drain stops reading mid-stream and closes the result, and
-+		// nothing here can see that: without the timeout this send would block for
-+		// the life of the host, pinning the goroutine and everything it holds.
-+		abandoned := false
- 		err := fn(func(v ...any) {
--			resultsCh <- v
--			closeOnce(readyCh)
-+			if abandoned {
-+				return
-+			}
-+			select {
-+			case resultsCh <- v:
-+				closeOnce(readyCh)
-+			case <-time.After(abandonAfter):
-+				abandoned = true
-+			}
- 		})
- 		if err != nil {
- 			errorsCh <- err
-diff --git a/core/builders/next_abandon_test.go b/core/builders/next_abandon_test.go
-new file mode 100644
-index 0000000..b31f43b
---- /dev/null
+diff -ruN a/core/builders/next_abandon_test.go b/core/builders/next_abandon_test.go
+--- a/core/builders/next_abandon_test.go
 +++ b/core/builders/next_abandon_test.go
 @@ -0,0 +1,35 @@
 +package builders
@@ -77,148 +37,94 @@ index 0000000..b31f43b
 +		t.Fatal("yield goroutine never returned: a capped drain leaks it")
 +	}
 +}
-diff --git a/core/call.go b/core/call.go
-index 3ab1f05..e67cdcb 100644
+diff -ruN a/core/builders/next.go b/core/builders/next.go
+--- a/core/builders/next.go
++++ b/core/builders/next.go
+@@ -69,6 +69,10 @@
+ 	return next, hasNext
+ }
+ 
++// how long a yield waits for a reader before giving the row up. only a
++// consumer that has stopped reading altogether ever waits this long.
++var abandonAfter = 60 * time.Second
++
+ // closeOnce closes the channel if it isn't already closed.
+ func closeOnce[T any](ch chan T) {
+ 	select {
+@@ -95,9 +99,20 @@
+ 			close(errorsCh)
+ 		}()
+ 
++		// a capped drain stops reading mid-stream and closes the result, and
++		// nothing here can see that: without the timeout this send would block for
++		// the life of the host, pinning the goroutine and everything it holds.
++		abandoned := false
+ 		err := fn(func(v ...any) {
+-			resultsCh <- v
+-			closeOnce(readyCh)
++			if abandoned {
++				return
++			}
++			select {
++			case resultsCh <- v:
++				closeOnce(readyCh)
++			case <-time.After(abandonAfter):
++				abandoned = true
++			}
+ 		})
+ 		if err != nil {
+ 			errorsCh <- err
+diff -ruN a/core/call.go b/core/call.go
 --- a/core/call.go
 +++ b/core/call.go
-@@ -153,6 +153,7 @@ func newCallFromExecutor(executor func(context.Context) (ResultStream, error), q
+@@ -153,6 +153,7 @@
  		}
  
  		// set iterator to result
-+		c.result.maxMemory = memoryCap(query)
++		c.result.maxRows = rowCap(query)
  		err = c.result.SetIter(iter, func() { eventsCh <- CallStateRetrieving })
  		if err != nil {
  			c.timeTaken = time.Since(c.timestamp)
-diff --git a/core/limit.go b/core/limit.go
-new file mode 100644
-index 0000000..43eea5d
---- /dev/null
+diff -ruN a/core/limit.go b/core/limit.go
+--- a/core/limit.go
 +++ b/core/limit.go
-@@ -0,0 +1,112 @@
+@@ -0,0 +1,29 @@
 +package core
 +
 +import (
 +	"os"
-+	"reflect"
 +	"regexp"
 +	"strconv"
-+	"strings"
-+	"time"
 +)
 +
 +// the host drains a whole result set into memory before the ui draws its first
-+// page, and never evicts it. DBEE_MAX_MEMORY bounds the drain instead of the
-+// query: once the rows held pass the budget the iterator is closed and the rest
-+// is never read. it takes bytes or a size like 512MiB or 2G, 0 or off for none.
-+// a query carrying `no_limit` opts out.
-+const defaultMaxMemory = 1 << 30
-+
-+var maxMemory = parseSize(os.Getenv("DBEE_MAX_MEMORY"), defaultMaxMemory)
-+
-+var sizeRe = regexp.MustCompile(`(?i)^\s*(\d+(?:\.\d+)?)\s*([kmgt]?)(?:i?b)?\s*$`)
-+
-+// parseSize reads a byte count with an optional binary unit, fallback if unset or garbled.
-+func parseSize(s string, fallback int64) int64 {
-+	if strings.EqualFold(strings.TrimSpace(s), "off") {
++// page, and never evicts it. DBEE_MAX_ROWS bounds the drain instead of the
++// query: past the cap the iterator is closed and the rest is never read.
++// a query carrying `no_limit` opts out. 0 or unset means no cap.
++var maxRows = func() int {
++	n, err := strconv.Atoi(os.Getenv("DBEE_MAX_ROWS"))
++	if err != nil || n < 0 {
 +		return 0
 +	}
-+	m := sizeRe.FindStringSubmatch(s)
-+	if m == nil {
-+		return fallback
-+	}
-+	n, err := strconv.ParseFloat(m[1], 64)
-+	if err != nil {
-+		return fallback
-+	}
-+	shift := 0
-+	if m[2] != "" {
-+		shift = strings.Index("kmgt", strings.ToLower(m[2])) + 1
-+	}
-+	return int64(n * float64(int64(1)<<(10*shift)))
-+}
++	return n
++}()
 +
 +var noLimitRe = regexp.MustCompile(`(?i)\bno_limit\b`)
 +
-+// memoryCap is the budget that applies to a query, 0 for none.
-+func memoryCap(query string) int64 {
++// rowCap is the cap that applies to a query, 0 for none.
++func rowCap(query string) int {
 +	if noLimitRe.MatchString(query) {
 +		return 0
 +	}
-+	return maxMemory
++	return maxRows
 +}
-+
-+// rowSize roughly estimates the bytes a row keeps alive: the slice, an interface
-+// per cell and whatever each cell points at.
-+func rowSize(row Row) int64 {
-+	n := int64(24 + 16*len(row))
-+	for _, v := range row {
-+		n += valueSize(reflect.ValueOf(v), 0)
-+	}
-+	return n
-+}
-+
-+var timeType = reflect.TypeOf(time.Time{})
-+
-+// valueSize is the heap behind v. depth bounds the walk for nested driver types.
-+func valueSize(v reflect.Value, depth int) int64 {
-+	if !v.IsValid() || depth > 8 {
-+		return 0
-+	}
-+	switch v.Kind() {
-+	case reflect.String:
-+		return int64(v.Len())
-+	case reflect.Slice:
-+		if v.Type().Elem().Kind() == reflect.Uint8 {
-+			return int64(v.Len())
-+		}
-+		n := int64(v.Len()) * int64(v.Type().Elem().Size())
-+		for i := 0; i < v.Len(); i++ {
-+			n += valueSize(v.Index(i), depth+1)
-+		}
-+		return n
-+	case reflect.Map:
-+		n := int64(v.Len()) * int64(v.Type().Key().Size()+v.Type().Elem().Size())
-+		iter := v.MapRange()
-+		for iter.Next() {
-+			n += valueSize(iter.Key(), depth+1) + valueSize(iter.Value(), depth+1)
-+		}
-+		return n
-+	case reflect.Pointer, reflect.Interface:
-+		if v.IsNil() {
-+			return 0
-+		}
-+		e := v.Elem()
-+		return int64(e.Type().Size()) + valueSize(e, depth+1)
-+	case reflect.Struct:
-+		if v.Type() == timeType {
-+			return 0
-+		}
-+		var n int64
-+		for i := 0; i < v.NumField(); i++ {
-+			n += valueSize(v.Field(i), depth+1)
-+		}
-+		return n
-+	case reflect.Array:
-+		var n int64
-+		for i := 0; i < v.Len(); i++ {
-+			n += valueSize(v.Index(i), depth+1)
-+		}
-+		return n
-+	}
-+	return 0
-+}
-diff --git a/core/limit_internal_test.go b/core/limit_internal_test.go
-new file mode 100644
-index 0000000..d29be2a
---- /dev/null
+diff -ruN a/core/limit_internal_test.go b/core/limit_internal_test.go
+--- a/core/limit_internal_test.go
 +++ b/core/limit_internal_test.go
-@@ -0,0 +1,88 @@
+@@ -0,0 +1,51 @@
 +package core
 +
-+import (
-+	"strings"
-+	"testing"
-+)
++import "testing"
 +
 +type countStream struct {
 +	n, read int
@@ -234,36 +140,32 @@ index 0000000..d29be2a
 +	return Row{s.read}, nil
 +}
 +
-+func TestMemoryCap(t *testing.T) {
-+	// every countStream row is an int in a one cell row
-+	row := rowSize(Row{1})
-+
++func TestRowCap(t *testing.T) {
 +	for _, tc := range []struct {
 +		name  string
-+		cap   int64
++		cap   int
 +		query string
 +		want  int
++		read  int
 +	}{
-+		{"capped", 10 * row, "select * from t", 10},
-+		{"under cap", 5000 * row, "select * from t", 1000},
-+		{"no cap", 0, "select * from t", 1000},
-+		{"opt out", 10 * row, "select * from t -- no_limit", 1000},
++		{"capped", 10, "select * from t", 10, 10},
++		{"under cap", 5000, "select * from t", 1000, 1000},
++		{"no cap", 0, "select * from t", 1000, 1000},
++		{"opt out", 10, "select * from t -- no_limit", 1000, 1000},
 +	} {
 +		t.Run(tc.name, func(t *testing.T) {
-+			maxMemory = tc.cap
-+			defer func() { maxMemory = defaultMaxMemory }()
-+
++			maxRows = tc.cap
 +			s := &countStream{n: 1000}
 +			r := new(Result)
-+			r.maxMemory = memoryCap(tc.query)
++			r.maxRows = rowCap(tc.query)
 +			if err := r.SetIter(s, nil); err != nil {
 +				t.Fatal(err)
 +			}
 +			if r.Len() != tc.want {
 +				t.Fatalf("kept %d rows, want %d", r.Len(), tc.want)
 +			}
-+			if s.read != tc.want {
-+				t.Fatalf("pulled %d rows from the driver, want %d", s.read, tc.want)
++			if s.read != tc.read {
++				t.Fatalf("pulled %d rows from the driver, want %d", s.read, tc.read)
 +			}
 +			if !s.closed {
 +				t.Fatal("iterator not closed")
@@ -271,59 +173,27 @@ index 0000000..d29be2a
 +		})
 +	}
 +}
-+
-+func TestParseSize(t *testing.T) {
-+	for in, want := range map[string]int64{
-+		"":        defaultMaxMemory,
-+		"garbage": defaultMaxMemory,
-+		"0":       0,
-+		"off":     0,
-+		"2048":    2048,
-+		"512MiB":  512 << 20,
-+		"1GiB":    1 << 30,
-+		"1.5g":    3 << 29,
-+		"2 GB":    2 << 30,
-+		"64k":     64 << 10,
-+	} {
-+		if got := parseSize(in, defaultMaxMemory); got != want {
-+			t.Errorf("parseSize(%q) = %d, want %d", in, got, want)
-+		}
-+	}
-+}
-+
-+func TestRowSize(t *testing.T) {
-+	small := rowSize(Row{1, "a"})
-+	big := rowSize(Row{1, strings.Repeat("a", 1<<20)})
-+	if big-small < 1<<20-1 {
-+		t.Fatalf("a 1MiB string only added %d bytes", big-small)
-+	}
-+	if nested := rowSize(Row{map[string]any{"k": []byte(strings.Repeat("b", 4096))}}); nested < 4096 {
-+		t.Fatalf("nested value sized at %d, want at least 4096", nested)
-+	}
-+}
-diff --git a/core/result.go b/core/result.go
-index d8c1612..3e618c3 100644
+diff -ruN a/core/result.go b/core/result.go
 --- a/core/result.go
 +++ b/core/result.go
-@@ -17,6 +17,7 @@ type Result struct {
+@@ -17,6 +17,7 @@
  
  	isDrained  bool
  	isFilled   bool
-+	maxMemory  int64
++	maxRows    int
  	writeMutex sync.Mutex
  	readMutex  sync.RWMutex
  }
-@@ -45,8 +46,17 @@ func (cr *Result) SetIter(iter ResultStream, onFillStart func()) error {
+@@ -45,8 +46,16 @@
  		onFillStart()
  	}
  
 -	// drain the iterator
 -	for iter.HasNext() {
-+	// drain the iterator until the rows held pass the memory budget. the check
-+	// comes before HasNext so a capped drain never pulls a row it then throws away.
-+	var held int64
++	// drain the iterator, up to the row cap. the cap is checked before HasNext
++	// so a capped drain never pulls the row it is about to throw away.
 +	for {
-+		if cr.maxMemory > 0 && held >= cr.maxMemory {
++		if cr.maxRows > 0 && len(cr.rows) >= cr.maxRows {
 +			break
 +		}
 +		if !iter.HasNext() {
@@ -333,21 +203,10 @@ index d8c1612..3e618c3 100644
  		row, err := iter.Next()
  		if err != nil {
  			cr.isFilled = false
-@@ -54,6 +64,9 @@ func (cr *Result) SetIter(iter ResultStream, onFillStart func()) error {
- 		}
- 
- 		cr.rows = append(cr.rows, row)
-+		if cr.maxMemory > 0 {
-+			held += rowSize(row)
-+		}
- 	}
- 
- 	return nil
-diff --git a/main.go b/main.go
-index ccf0300..27ce199 100644
+diff -ruN a/main.go b/main.go
 --- a/main.go
 +++ b/main.go
-@@ -13,6 +13,9 @@ import (
+@@ -13,6 +13,9 @@
  	"github.com/kndndrj/nvim-dbee/dbee/plugin"
  )
  
@@ -357,7 +216,7 @@ index ccf0300..27ce199 100644
  func main() {
  	generateManifest := flag.String("manifest", "", "Generate manifest to file (filename of manifest).")
  	getVersion := flag.Bool("version", false, "Get version and exit.")
-@@ -20,17 +23,19 @@ func main() {
+@@ -20,17 +23,19 @@
  
  	// get version info
  	if *getVersion {
