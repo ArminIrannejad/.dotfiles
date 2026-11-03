@@ -1,3 +1,9 @@
+# Run directly, typing it via bindkey -s gets highlighted char by char
+_sessionizer() { tmux-sessionizer </dev/tty; zle reset-prompt }
+_sessionizer_w() { tmux-sessionizer -w </dev/tty; zle reset-prompt }
+zle -N _sessionizer
+zle -N _sessionizer_w
+
 zvm_config() {
 ZVM_INSERT_MODE_CURSOR=$ZVM_CURSOR_BLOCK
 ZVM_NORMAL_MODE_CURSOR=$ZVM_CURSOR_BLOCK
@@ -23,9 +29,9 @@ zvm_after_init() {
 
   bindkey -M vicmd 'k' history-substring-search-up
   bindkey -M vicmd 'j' history-substring-search-down
-  bindkey -M viins -s '^F' "tmux-sessionizer\n"
-  bindkey -M vicmd -s '^F' "tmux-sessionizer\n"
-  bindkey -M viins -s '^G' "tmux-sessionizer -w\n"
-  bindkey -M vicmd -s '^G' "tmux-sessionizer -w\n"
+  bindkey -M viins '^F' _sessionizer
+  bindkey -M vicmd '^F' _sessionizer
+  bindkey -M viins '^G' _sessionizer_w
+  bindkey -M vicmd '^G' _sessionizer_w
 }
 
