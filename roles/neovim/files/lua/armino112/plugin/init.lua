@@ -1,30 +1,15 @@
-local plugins = {
-  "abolish",
-  "colors",
-  "ui",
-  "compile",
-  "csv",
-  "dap",
-  "dbee",
-  "dial",
-  "fff",
-  "git",
-  "harpoon",
-  "haskell",
-  "ipynb",
-  "lsp",
-  "lualine",
-  "mini",
-  "multicursor",
-  "oil",
-  "org",
-  "quicker",
-  "snacks",
-  "tarminal",
-  "treesitter",
-  "trouble",
-  "vimbegood",
-}
+local dir = vim.fs.joinpath(vim.fn.stdpath("config"), "lua/armino112/plugin")
+local plugins = {}
+
+for name, kind in vim.fs.dir(dir) do
+  if kind == "file" and name:match("%.lua$") and name ~= "init.lua" then
+    table.insert(plugins, name:sub(1, -5))
+  elseif kind == "directory" and vim.uv.fs_stat(vim.fs.joinpath(dir, name, "init.lua")) then
+    table.insert(plugins, name)
+  end
+end
+
+table.sort(plugins)
 
 for _, name in ipairs(plugins) do
   require("armino112.plugin." .. name)
