@@ -53,10 +53,21 @@ vim.opt.smoothscroll = true
 vim.opt.hlsearch = false
 vim.opt.incsearch = true
 vim.opt.cursorline = true
-vim.opt.cursorlineopt = "number"
+vim.opt.cursorlineopt = "both"
 vim.opt.termguicolors = true
 
+local cursorline = vim.api.nvim_create_augroup("ActiveCursorLine", { clear = true })
+vim.api.nvim_create_autocmd({ "WinEnter", "BufWinEnter" }, {
+  group = cursorline,
+  callback = function() vim.opt_local.cursorlineopt = "both" end,
+})
+vim.api.nvim_create_autocmd("WinLeave", {
+  group = cursorline,
+  callback = function() vim.opt_local.cursorlineopt = "number" end,
+})
+
 vim.opt.scrolloff = 8
+vim.opt.sidescrolloff = 8
 vim.opt.signcolumn = "yes"
 vim.opt.isfname:append("@-@")
 
