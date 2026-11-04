@@ -19,19 +19,6 @@ vim.opt.wildoptions:append('fuzzy')
 vim.opt.grepprg = 'rg --vimgrep --no-messages --smart-case'
 
 
-local yank_hl = vim.api.nvim_create_augroup("YankHighlight", { clear = true })
-vim.api.nvim_create_autocmd("TextYankPost", {
-  group    = yank_hl,
-  pattern  = "*",
-  callback = function()
-    vim.highlight.on_yank {
-      higroup = "IncSearch",
-      timeout = 200,
-    }
-  end,
-})
-
-
 vim.opt.tabstop = 2
 vim.opt.softtabstop = 2
 vim.opt.shiftwidth = 2
@@ -55,16 +42,6 @@ vim.opt.incsearch = true
 vim.opt.cursorline = true
 vim.opt.cursorlineopt = "both"
 vim.opt.termguicolors = true
-
-local cursorline = vim.api.nvim_create_augroup("ActiveCursorLine", { clear = true })
-vim.api.nvim_create_autocmd({ "WinEnter", "BufWinEnter" }, {
-  group = cursorline,
-  callback = function() vim.opt_local.cursorlineopt = "both" end,
-})
-vim.api.nvim_create_autocmd("WinLeave", {
-  group = cursorline,
-  callback = function() vim.opt_local.cursorlineopt = "number" end,
-})
 
 vim.opt.scrolloff = 8
 vim.opt.sidescrolloff = 8
