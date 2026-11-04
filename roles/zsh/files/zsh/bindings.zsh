@@ -34,5 +34,9 @@ zvm_after_init() {
   bindkey -M vicmd '^F' _sessionizer
   bindkey -M viins '^G' _sessionizer_w
   bindkey -M vicmd '^G' _sessionizer_w
+
+  # zvm_init rebinds viins ^R to history-incremental-search-backward
+  bindkey -M viins '^R' fzf-history-widget
+  bindkey -M vicmd '^R' fzf-history-widget
 }
 
