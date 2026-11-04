@@ -4,7 +4,7 @@ if command -v eza >/dev/null 2>&1; then
   alias ls='eza'
   alias ll='eza -lh --icons --git'
   alias lla='eza -lah --icons --git'
-  alias tree='eza --tree --icons'
+  alias tree='eza --tree --icons=auto'
   compdef eza=ls
 else
   alias ll='ls -lh'
