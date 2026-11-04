@@ -41,17 +41,7 @@ fi
 zstyle ':completion:*' menu select
 zstyle ':completion:*' matcher-list 'm:{a-z}={A-Za-z}'
 
-for fzf_bindings in \
-  /usr/share/fzf/shell/key-bindings.zsh \
-  /usr/share/doc/fzf/examples/key-bindings.zsh; do
-  [[ -f "$fzf_bindings" ]] && source "$fzf_bindings" && break
-done
-
-for fzf_completion in \
-  /usr/share/fzf/shell/completion.zsh \
-  /usr/share/doc/fzf/examples/completion.zsh; do
-  [[ -f "$fzf_completion" ]] && source "$fzf_completion" && break
-done
+command -v fzf >/dev/null 2>&1 && source <(fzf --zsh)
 
 for zsh_config in fzf aliases bindings plugins prompt; do
   [[ -f "$ZDOTDIR/${zsh_config}.zsh" ]] && source "$ZDOTDIR/${zsh_config}.zsh"
