@@ -40,7 +40,8 @@ vim.opt.smoothscroll = true
 vim.opt.hlsearch = false
 vim.opt.incsearch = true
 vim.opt.cursorline = true
-vim.opt.cursorlineopt = "both"
+-- vim.opt.cursorlineopt = "both"
+vim.opt.cursorlineopt = "number"
 vim.opt.termguicolors = true
 
 vim.opt.scrolloff = 8

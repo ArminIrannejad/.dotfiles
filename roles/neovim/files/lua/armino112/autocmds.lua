@@ -10,18 +10,18 @@ vim.api.nvim_create_autocmd("TextYankPost", {
   end,
 })
 
-local cursorline = vim.api.nvim_create_augroup("ActiveCursorLine", { clear = true })
-vim.api.nvim_create_autocmd({ "WinEnter", "BufWinEnter", "TermOpen" }, {
-  group = cursorline,
-  callback = function(args)
-    local plain = vim.bo[args.buf].filetype == "oil" or vim.bo[args.buf].buftype == "terminal"
-    vim.opt_local.cursorlineopt = plain and "number" or "both"
-  end,
-})
-vim.api.nvim_create_autocmd("WinLeave", {
-  group = cursorline,
-  callback = function() vim.opt_local.cursorlineopt = "number" end,
-})
+-- local cursorline = vim.api.nvim_create_augroup("ActiveCursorLine", { clear = true })
+-- vim.api.nvim_create_autocmd({ "WinEnter", "BufWinEnter", "TermOpen" }, {
+--   group = cursorline,
+--   callback = function(args)
+--     local plain = vim.bo[args.buf].filetype == "oil" or vim.bo[args.buf].buftype == "terminal"
+--     vim.opt_local.cursorlineopt = plain and "number" or "both"
+--   end,
+-- })
+-- vim.api.nvim_create_autocmd("WinLeave", {
+--   group = cursorline,
+--   callback = function() vim.opt_local.cursorlineopt = "number" end,
+-- })
 
 vim.api.nvim_create_autocmd("FileType", {
   group = vim.api.nvim_create_augroup("treesitter_highlight", { clear = true }),
