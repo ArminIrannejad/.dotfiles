@@ -36,3 +36,27 @@ vim.api.nvim_create_autocmd("FileType", {
     pcall(vim.treesitter.start, args.buf, lang)
   end,
 })
+
+vim.api.nvim_create_autocmd("BufReadPost", {
+  group = vim.api.nvim_create_augroup("csv_auto_view", { clear = true }),
+  pattern = "*.csv",
+  command = "CsvViewEnable",
+})
+
+vim.api.nvim_create_autocmd("FileType", {
+  group = vim.api.nvim_create_augroup("close_with_q", { clear = true }),
+  pattern = { "checkhealth", "git", "help", "man", "qf", "query" },
+  callback = function(args)
+    vim.keymap.set("n", "q", "<cmd>quit<cr>", { buffer = args.buf, silent = true })
+  end,
+})
+
+vim.api.nvim_create_autocmd("BufReadPost", {
+  group = vim.api.nvim_create_augroup("last_location", { clear = true }),
+  callback = function(args)
+    local mark = vim.api.nvim_buf_get_mark(args.buf, '"')
+    if mark[1] > 0 and mark[1] <= vim.api.nvim_buf_line_count(args.buf) then
+      vim.cmd('normal! g`"zz')
+    end
+  end,
+})
