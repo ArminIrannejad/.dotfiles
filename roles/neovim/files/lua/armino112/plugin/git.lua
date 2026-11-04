@@ -10,7 +10,10 @@ vim.keymap.set("n", "<leader>gg", "<cmd>Neogit<cr>", { desc = "Show Neogit UI" }
 
 require("mini.git").setup({})
 require("mini.diff").setup({
-  view = { style = "sign" },
+  view = {
+    style = "sign",
+    signs = { add = "┃", change = "┃", delete = "_" },
+  },
 })
 
 local function hunk(action)
