@@ -1,14 +1,11 @@
 vim.pack.add({
-  { src = 'https://github.com/echasnovski/mini.nvim' },
+  { src = 'https://github.com/nvim-tree/nvim-web-devicons' },
   { src = 'https://github.com/akinsho/bufferline.nvim' },
   { src = 'https://github.com/MeanderingProgrammer/render-markdown.nvim' },
   { src = 'https://github.com/nvzone/showkeys' },
   { src = 'https://github.com/sphamba/smear-cursor.nvim' },
   { src = 'https://github.com/folke/which-key.nvim' },
 })
-
-require("mini.icons").setup({})
-MiniIcons.mock_nvim_web_devicons()
 
 require("bufferline").setup({
   options = {
