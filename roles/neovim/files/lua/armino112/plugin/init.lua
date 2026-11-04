@@ -1,7 +1,7 @@
 local plugins = {
   "abolish",
-  "bufferline",
   "colors",
+  "ui",
   "compile",
   "csv",
   "dap",
@@ -19,15 +19,11 @@ local plugins = {
   "oil",
   "org",
   "quicker",
-  "render-md",
-  "showkeys",
-  "smear_cursor",
   "snacks",
   "tarminal",
   "treesitter",
   "trouble",
   "vimbegood",
-  "which-key",
 }
 
 for _, name in ipairs(plugins) do

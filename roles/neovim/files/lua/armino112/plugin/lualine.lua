@@ -1,6 +1,5 @@
 vim.pack.add({
   { src = 'https://github.com/nvim-lualine/lualine.nvim' },
-  { src = 'https://github.com/nvim-tree/nvim-web-devicons' },
 })
 
 local loader = require("lualine.utils.loader")
