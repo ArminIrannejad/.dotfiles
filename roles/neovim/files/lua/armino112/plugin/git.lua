@@ -1,72 +1,50 @@
 vim.pack.add({
   { src = 'https://github.com/nvim-lua/plenary.nvim',         name = 'plenary.nvim' },
+  { src = 'https://github.com/echasnovski/mini.nvim' },
 
   { src = 'https://github.com/NeogitOrg/neogit' },
-  { src = 'https://github.com/sindrets/diffview.nvim' },
-  { src = 'https://github.com/lewis6991/gitsigns.nvim' },
+  { src = 'https://github.com/esmuellert/codediff.nvim' },
 })
 
 vim.keymap.set("n", "<leader>gg", "<cmd>Neogit<cr>", { desc = "Show Neogit UI" })
 
-vim.api.nvim_create_autocmd("FileType", {
-  pattern = { "DiffviewFiles", "DiffviewFilePanel", "DiffviewDiff" },
-  callback = function(event)
-    vim.keymap.set(
-      "n",
-      "q",
-      "<cmd>DiffviewClose<CR>",
-      { buffer = event.buf, silent = true, desc = "Close Diffview" }
-    )
-  end,
+require("mini.git").setup({})
+require("mini.diff").setup({
+  view = { style = "sign" },
 })
 
-require("gitsigns").setup({
-  current_line_blame = false,
-  current_line_blame_opts = {
-    virt_text = true,
-    virt_text_pos = "eol",
-    delay = 200,
-    ignore_whitespace = false,
-  },
-  current_line_blame_formatter = "<author>, <author_time:%Y-%m-%d> • <summary>",
+local function hunk(action)
+  return function()
+    local line = vim.fn.line(".")
+    MiniDiff.do_hunks(0, action, { line_start = line, line_end = line })
+  end
+end
 
-  signcolumn = true,
-  attach_to_untracked = true,
-  watch_gitdir = { interval = 1000, follow_files = true },
-  update_debounce = 100,
-  max_file_length = 40000,
-})
+vim.keymap.set("n", "<leader>gts", function() MiniDiff.toggle(0) end, { desc = "Toggle git signs" })
+vim.keymap.set("n", "<leader>gtb", "<cmd>vertical Git blame -- %<cr>", { desc = "Blame file" })
+vim.keymap.set("n", "<leader>gB", MiniGit.show_at_cursor, { desc = "Blame line (full)" })
 
-local gs = require("gitsigns")
+vim.keymap.set("n", "<leader>ghs", hunk("apply"), { desc = "Stage hunk" })
+vim.keymap.set("n", "<leader>ghr", hunk("reset"), { desc = "Reset hunk" })
+vim.keymap.set("n", "<leader>ghp", function() MiniDiff.toggle_overlay(0) end, { desc = "Toggle diff overlay" })
 
-vim.keymap.set("n", "<leader>gts", gs.toggle_signs, { desc = "Toggle git signs" })
-vim.keymap.set("n", "<leader>gtb", gs.toggle_current_line_blame, { desc = "Toggle inline blame" })
-vim.keymap.set("n", "<leader>gB", function() gs.blame_line({ full = true }) end, { desc = "Blame line (full)" })
-
-vim.keymap.set("n", "]h", gs.next_hunk, { desc = "Next git hunk" })
-vim.keymap.set("n", "[h", gs.prev_hunk, { desc = "Prev git hunk" })
-vim.keymap.set("n", "<leader>ghs", gs.stage_hunk, { desc = "Stage hunk" })
-vim.keymap.set("n", "<leader>ghr", gs.reset_hunk, { desc = "Reset hunk" })
-vim.keymap.set("n", "<leader>ghp", gs.preview_hunk, { desc = "Preview hunk" })
+local function relpath()
+  local file = vim.api.nvim_buf_get_name(0)
+  local root = vim.fs.root(0, ".git")
+  return root and vim.fs.relpath(root, file) or file
+end
 
 vim.keymap.set("n", "<leader>gdd", function()
-  local file = vim.fn.fnameescape(vim.fn.expand("%"))
-  vim.cmd("DiffviewOpen -- " .. file)
+  vim.cmd("CodeDiff -- " .. vim.fn.fnameescape(relpath()))
 end, { desc = "Diff vs index" })
 
-vim.keymap.set("n", "<leader>gdD", function()
-  local file = vim.fn.fnameescape(vim.fn.expand("%"))
-  vim.cmd("DiffviewOpen HEAD -- " .. file)
-end, { desc = "Diff vs HEAD" })
+vim.keymap.set("n", "<leader>gdD", "<cmd>CodeDiff file HEAD<cr>", { desc = "Diff vs HEAD" })
 
-vim.keymap.set("n", "<leader>gdm", function()
-  vim.cmd("DiffviewOpen main...HEAD") -- ... for comparison with mergebase and not just latest main
-end, { desc = "Main vs HEAD" })
+vim.keymap.set("n", "<leader>gdm", "<cmd>CodeDiff main...HEAD<cr>", { desc = "Main vs HEAD" })
 
-vim.keymap.set("n", "<leader>gdc", function()
-  local file = vim.fn.fnameescape(vim.fn.expand("%"))
+local function pick_commit(title, open)
   Snacks.picker.git_log({
-    title = "Diff current file vs commit",
+    title = title,
     layout = "vertical",
     confirm = function(picker, item)
       picker:close()
@@ -75,25 +53,15 @@ vim.keymap.set("n", "<leader>gdc", function()
         vim.notify("Could not read commit SHA", vim.log.levels.WARN)
         return
       end
-      vim.cmd("DiffviewOpen " .. sha .. " -- " .. file)
+      open(sha)
     end,
   })
+end
+
+vim.keymap.set("n", "<leader>gdc", function()
+  pick_commit("Diff current file vs commit", function(sha) vim.cmd("CodeDiff file " .. sha) end)
 end, { desc = "Diff vs chosen commit" })
 
 vim.keymap.set("n", "<leader>gdC", function()
-  Snacks.picker.git_log({
-    title = "Diff repo vs commit",
-    layout = "vertical",
-    confirm = function(picker, item)
-      picker:close()
-
-      local sha = item.commit or item.hash or item.text:match("^(%S+)")
-      if not sha then
-        vim.notify("Could not read commit SHA", vim.log.levels.WARN)
-        return
-      end
-
-      vim.cmd("DiffviewOpen " .. sha)
-    end,
-  })
+  pick_commit("Diff repo vs commit", function(sha) vim.cmd("CodeDiff " .. sha) end)
 end, { desc = "Diff repo vs chosen commit" })
