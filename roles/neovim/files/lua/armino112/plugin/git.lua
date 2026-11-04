@@ -63,6 +63,23 @@ end, { desc = "Diff vs index" })
 vim.keymap.set("n", "<leader>gdD", "<cmd>CodeDiff file HEAD<cr>", { desc = "Diff vs HEAD" })
 
 vim.keymap.set("n", "<leader>gdm", "<cmd>CodeDiff main...HEAD<cr>", { desc = "Main vs HEAD" })
+vim.keymap.set("n", "<leader>gdh", "<cmd>CodeDiff history %<cr>", { desc = "File history" })
+vim.keymap.set("n", "<leader>gdH", "<cmd>CodeDiff history<cr>", { desc = "Repo history" })
+
+vim.keymap.set({ "n", "x" }, "<leader>gy", function()
+  Snacks.gitbrowse({
+    what = "permalink",
+    notify = false,
+    open = function(url)
+      vim.fn.setreg("+", url)
+      vim.notify(url)
+    end,
+  })
+end, { desc = "Yank git link" })
+
+vim.keymap.set({ "n", "x" }, "<leader>gY", function()
+  Snacks.gitbrowse({ what = "permalink" })
+end, { desc = "Open git link" })
 
 local function pick_commit(title, open)
   Snacks.picker.git_log({
