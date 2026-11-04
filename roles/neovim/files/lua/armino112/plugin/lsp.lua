@@ -106,7 +106,16 @@ require("blink.cmp").setup({
   },
 })
 
-local capabilities = require("blink.cmp").get_lsp_capabilities()
+local capabilities = require("blink.cmp").get_lsp_capabilities({
+  workspace = {
+    fileOperations = {
+      didRename = true,
+      willRename = true,
+    },
+  },
+})
+
+vim.lsp.config("*", { capabilities = capabilities })
 
 require("mason").setup()
 
