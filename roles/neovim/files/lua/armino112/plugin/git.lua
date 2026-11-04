@@ -4,17 +4,40 @@ vim.pack.add({
 
   { src = 'https://github.com/NeogitOrg/neogit' },
   { src = 'https://github.com/esmuellert/codediff.nvim' },
+  { src = 'https://github.com/lewis6991/gitsigns.nvim' },
 })
 
 vim.keymap.set("n", "<leader>gg", "<cmd>Neogit<cr>", { desc = "Show Neogit UI" })
 
-require("mini.git").setup({})
+require("gitsigns").setup({
+  current_line_blame = false,
+  current_line_blame_opts = {
+    virt_text = true,
+    virt_text_pos = "eol",
+    delay = 200,
+    ignore_whitespace = false,
+  },
+  current_line_blame_formatter = "<author>, <author_time:%Y-%m-%d> • <summary>",
+
+  signcolumn = true,
+  attach_to_untracked = true,
+  watch_gitdir = { interval = 1000, follow_files = true },
+  update_debounce = 100,
+  max_file_length = 40000,
+})
+
 require("mini.diff").setup({
   view = {
     style = "sign",
-    signs = { add = "┃", change = "┃", delete = "_" },
+    signs = { add = "", change = "", delete = "" },
   },
 })
+
+local gs = require("gitsigns")
+
+vim.keymap.set("n", "<leader>gts", gs.toggle_signs, { desc = "Toggle git signs" })
+vim.keymap.set("n", "<leader>gtb", gs.toggle_current_line_blame, { desc = "Toggle inline blame" })
+vim.keymap.set("n", "<leader>gB", function() gs.blame_line({ full = true }) end, { desc = "Blame line (full)" })
 
 local function hunk(action)
   return function()
@@ -22,10 +45,6 @@ local function hunk(action)
     MiniDiff.do_hunks(0, action, { line_start = line, line_end = line })
   end
 end
-
-vim.keymap.set("n", "<leader>gts", function() MiniDiff.toggle(0) end, { desc = "Toggle git signs" })
-vim.keymap.set("n", "<leader>gtb", "<cmd>vertical Git blame -- %<cr>", { desc = "Blame file" })
-vim.keymap.set("n", "<leader>gB", MiniGit.show_at_cursor, { desc = "Blame line (full)" })
 
 vim.keymap.set("n", "<leader>ghs", hunk("apply"), { desc = "Stage hunk" })
 vim.keymap.set("n", "<leader>ghr", hunk("reset"), { desc = "Reset hunk" })
