@@ -100,7 +100,7 @@ worktree() {
 
     if [[ $key == ctrl-x ]]; then
         [[ -n $path && $path != "$main" ]] || die "Not a removable worktree: $branch"
-        err=$(git -C "$main" worktree remove "$path" 2>&1) || die "$err"
+        err=$(git -C "$main" worktree remove --force "$path" 2>&1) || die "$err"
         tmux kill-session -t "=$(echo "$name" | sed 's/^\.//' | tr ./: _)" 2>/dev/null
         exit 0
     fi
