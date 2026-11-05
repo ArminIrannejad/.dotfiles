@@ -28,6 +28,12 @@
     BOOTSTRAP_HASKELL_NONINTERACTIVE: "1"
     BOOTSTRAP_HASKELL_MINIMAL: "1"
 
+- name: "Haskell | Upgrade GHCup"
+  ansible.builtin.command:
+    cmd: "{{ ansible_facts['user_dir'] }}/.ghcup/bin/ghcup upgrade"
+  register: haskell_ghcup_upgrade
+  changed_when: "'No GHCup update available' not in haskell_ghcup_upgrade.stderr + haskell_ghcup_upgrade.stdout"
+
 - name: "Haskell | Install selected toolchain versions"
   ansible.builtin.command:
     cmd: >-
