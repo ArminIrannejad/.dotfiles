@@ -8,6 +8,17 @@
   register: tuicr_installed
   changed_when: false
   failed_when: false
+  check_mode: false
+
+- name: "Tuicr | {{ ansible_facts['distribution'] }} | Query latest release"
+  ansible.builtin.uri:
+    url: https://api.github.com/repos/agavra/tuicr/releases/latest
+    headers:
+      Accept: application/vnd.github+json
+  register: tuicr_release
+  changed_when: false
+  check_mode: false
+  when: tuicr_installed.rc == 0
 
 - name: "Tuicr | {{ ansible_facts['distribution'] }} | Ensure bin directory exists"
   ansible.builtin.file:
@@ -15,11 +26,12 @@
     state: directory
     mode: "0755"
 
-- name: "Tuicr | {{ ansible_facts['distribution'] }} | Install tuicr to user bin"
+- name: "Tuicr | {{ ansible_facts['distribution'] }} | Install or upgrade tuicr in user bin"
   ansible.builtin.shell:
     cmd: curl -fsSL https://tuicr.dev/install.sh | sh
   environment:
     TUICR_INSTALL_DIR: "{{ bin_dir }}"
-  args:
-    creates: "{{ bin_dir }}/tuicr"
-  when: tuicr_installed.rc != 0
+    TUICR_INSTALL_YES: "1"
+  when: >-
+    tuicr_installed.rc != 0 or
+    ('tuicr ' ~ tuicr_release.json.tag_name | regex_replace('^v', '')) not in tuicr_installed.stdout
