@@ -8,6 +8,40 @@
     - "{{ ansible_facts['user_dir'] }}/.config"
     - "{{ bin_dir }}"
 
+- name: "{{ role_name | capitalize }} | Check if starship is installed"
+  ansible.builtin.command:
+    cmd: starship --version
+  register: starship_installed
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: "{{ role_name | capitalize }} | Resolve starship path"
+  ansible.builtin.shell:
+    cmd: command -v starship
+  register: starship_path
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: "{{ role_name | capitalize }} | Query latest release"
+  ansible.builtin.uri:
+    url: https://api.github.com/repos/starship/starship/releases/latest
+    headers:
+      Accept: application/vnd.github+json
+  register: starship_release
+  changed_when: false
+  check_mode: false
+  when: starship_installed.rc == 0
+
+- name: "{{ role_name | capitalize }} | Compare versions"
+  ansible.builtin.set_fact:
+    starship_package_managed: "{{ starship_path.stdout is match('/usr/bin/') }}"
+    starship_script_outdated: >-
+      {{ starship_installed.rc == 0
+         and starship_path.stdout is not match('/usr/bin/')
+         and ('starship ' ~ starship_release.json.tag_name | regex_replace('^v', '')) not in starship_installed.stdout }}
+
 - name: "{{ role_name | capitalize }} | Checking for Distribution Config: {{ ansible_facts['distribution'] }}"
   ansible.builtin.stat:
     path: "{{ role_path }}/tasks/{{ ansible_facts['distribution'] }}.yml"
