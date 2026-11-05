@@ -2,6 +2,6 @@
 - name: "Podman | Fedora | Install Podman"
   ansible.builtin.dnf:
     name: podman
-    state: present
+    state: latest
   become: true
   when: can_install_packages | default(false)

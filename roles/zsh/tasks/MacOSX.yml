@@ -4,4 +4,4 @@
     name:
       - zsh
       - fzf
-    state: present
+    state: latest

@@ -2,4 +2,4 @@
 - name: "Podman | MacOSX | Install Podman"
   community.general.homebrew:
     name: podman
-    state: present
+    state: latest

@@ -2,4 +2,4 @@
 - name: "Cmake | MacOSX | Install cmake"
   community.general.homebrew:
     name: cmake
-    state: present
+    state: latest

@@ -10,7 +10,7 @@
       - 'rsync'
       - 'tar'
       - 'jq'
-    state: present
+    state: latest
   register: apt_result
   become: true
   until: apt_result is success

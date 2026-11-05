@@ -2,4 +2,4 @@
 - name: "Java | MacOSX | Install OpenJDK"
   community.general.homebrew:
     name: openjdk
-    state: present
+    state: latest

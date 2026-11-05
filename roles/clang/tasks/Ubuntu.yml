@@ -2,7 +2,7 @@
 - name: "Clang | {{ ansible_facts['distribution'] }} | Install packages"
   ansible.builtin.apt:
     name: clang
-    state: present
+    state: latest
     update_cache: true
   become: true
   when: can_install_packages | default(false)

@@ -2,4 +2,4 @@
 - name: "Gh | MacOSX | Install gh"
   community.general.homebrew:
     name: gh
-    state: present
+    state: latest

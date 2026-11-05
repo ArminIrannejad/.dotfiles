@@ -2,4 +2,4 @@
 - name: "Terraform | MacOSX | Install Terraform"
   community.general.homebrew:
     name: terraform
-    state: present
+    state: latest

@@ -5,7 +5,7 @@
 - name: "Fastfetch | {{ ansible_facts['distribution'] }} | Install packages"
   ansible.builtin.apt:
     name: fastfetch
-    state: present
+    state: latest
     update_cache: true
   become: true
   register: fastfetch_apt

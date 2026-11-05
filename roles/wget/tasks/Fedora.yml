@@ -2,6 +2,6 @@
 - name: "Wget | {{ ansible_facts['distribution'] }} | Install packages"
   ansible.builtin.dnf:
     name: wget
-    state: present
+    state: latest
   become: true
   when: can_install_packages | default(false)

@@ -9,9 +9,9 @@
       - tree-sitter-cli
       - unzip
       - ripgrep
-    state: present
+    state: latest
 
 - name: "Neovim | MacOSX | Install Neovim"
   community.general.homebrew:
     name: neovim
-    state: present
+    state: latest

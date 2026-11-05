@@ -2,4 +2,4 @@
 - name: "Wget | MacOSX | Install wget"
   community.general.homebrew:
     name: wget
-    state: present
+    state: latest

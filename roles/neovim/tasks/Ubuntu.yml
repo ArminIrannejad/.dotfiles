@@ -37,7 +37,7 @@
       - libtool
       - unzip
       - ripgrep
-    state: present
+    state: latest
     update_cache: true
   become: true
   when: can_install_packages | default(false)

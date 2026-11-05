@@ -7,6 +7,6 @@
       - make
       - libtool
       - pkgconf-pkg-config
-    state: present
+    state: latest
   become: true
   when: can_install_packages | default(false)

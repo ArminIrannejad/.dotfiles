@@ -2,4 +2,4 @@
 - name: "Hyperfine | MacOSX | Install hyperfine"
   community.general.homebrew:
     name: hyperfine
-    state: present
+    state: latest

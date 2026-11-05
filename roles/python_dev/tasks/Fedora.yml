@@ -5,6 +5,6 @@
       - poetry
       - python3-coverage
       - python3-devel
-    state: present
+    state: latest
   become: true
   when: can_install_packages | default(false)

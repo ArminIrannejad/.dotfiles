@@ -2,7 +2,7 @@
 - name: "Lua | MacOSX | Install lua toolchain"
   community.general.homebrew:
     name: "{{ item }}"
-    state: present
+    state: latest
   loop:
     - lua
     - luarocks

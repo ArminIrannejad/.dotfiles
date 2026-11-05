@@ -12,6 +12,6 @@
 - name: "Terraform | Fedora | Install Terraform"
   ansible.builtin.dnf:
     name: terraform
-    state: present
+    state: latest
   become: true
   when: can_install_packages | default(false)

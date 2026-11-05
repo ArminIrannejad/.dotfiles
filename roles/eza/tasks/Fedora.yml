@@ -2,7 +2,7 @@
 - name: "Eza | {{ ansible_facts['distribution'] }} | Install optional packages"
   ansible.builtin.dnf:
     name: "{{ item }}"
-    state: present
+    state: latest
   loop:
     - eza
   become: true

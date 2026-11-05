@@ -2,4 +2,4 @@
 - name: "Eza | MacOSX | Install eza"
   community.general.homebrew:
     name: eza
-    state: present
+    state: latest

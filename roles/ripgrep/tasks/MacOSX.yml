@@ -2,4 +2,4 @@
 - name: "Ripgrep | MacOSX | Install ripgrep"
   community.general.homebrew:
     name: ripgrep
-    state: present
+    state: latest

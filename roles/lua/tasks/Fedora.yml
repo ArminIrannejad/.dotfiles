@@ -5,6 +5,6 @@
       - lua
       - luajit
       - luarocks
-    state: present
+    state: latest
   become: true
   when: can_install_packages | default(false)

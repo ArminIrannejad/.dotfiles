@@ -7,4 +7,4 @@
 - name: "Tuicr | MacOSX | Install tuicr"
   community.general.homebrew:
     name: tuicr
-    state: present
+    state: latest

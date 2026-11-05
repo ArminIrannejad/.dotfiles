@@ -2,7 +2,7 @@
 - name: "Zoxide | {{ ansible_facts['distribution'] }} | Install optional packages"
   ansible.builtin.apt:
     name: "{{ item }}"
-    state: present
+    state: latest
   loop:
     - zoxide
   become: true

@@ -2,4 +2,4 @@
 - name: "Gitleaks | MacOSX | Install gitleaks"
   community.general.homebrew:
     name: gitleaks
-    state: present
+    state: latest

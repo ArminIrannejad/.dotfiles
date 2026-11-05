@@ -2,4 +2,4 @@
 - name: "Tree | MacOSX | Install tree"
   community.general.homebrew:
     name: tree
-    state: present
+    state: latest

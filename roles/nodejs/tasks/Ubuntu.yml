@@ -3,7 +3,7 @@
   ansible.builtin.apt:
     name:
       - nodejs
-    state: present
+    state: latest
     update_cache: true
   become: true
   when: can_install_packages | default(false)

@@ -35,7 +35,7 @@
 - name: "Terraform | {{ ansible_facts['distribution'] }} | Install Terraform"
   ansible.builtin.apt:
     name: terraform
-    state: present
+    state: latest
     update_cache: true
   become: true
   when: can_install_packages | default(false)

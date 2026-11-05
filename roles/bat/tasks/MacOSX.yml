@@ -2,4 +2,4 @@
 - name: "Bat | MacOSX | Install bat"
   community.general.homebrew:
     name: bat
-    state: present
+    state: latest

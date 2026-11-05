@@ -4,7 +4,7 @@
 - name: "Java | {{ ansible_facts['distribution'] }} | Install packages"
   ansible.builtin.apt:
     name: default-jdk
-    state: present
+    state: latest
     update_cache: true
   become: true
   when: can_install_packages | default(false)

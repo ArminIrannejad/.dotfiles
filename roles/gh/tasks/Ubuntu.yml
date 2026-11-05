@@ -35,7 +35,7 @@
 - name: "Gh | {{ ansible_facts['distribution'] }} | Install packages"
   ansible.builtin.apt:
     name: gh
-    state: present
+    state: latest
     update_cache: true
   become: true
   when: can_install_packages | default(false)

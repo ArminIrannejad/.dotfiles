@@ -8,6 +8,7 @@
 - name: Lua | Install Lua
   ansible.builtin.apt:
     name: "{{ item }}"
+    state: latest
   become: true
   loop:
     - lua5.1

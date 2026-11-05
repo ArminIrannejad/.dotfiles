@@ -2,6 +2,6 @@
 - name: "Btop | {{ ansible_facts['distribution'] }} | Install packages"
   ansible.builtin.dnf:
     name: btop
-    state: present
+    state: latest
   become: true
   when: can_install_packages | default(false)
