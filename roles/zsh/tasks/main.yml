@@ -102,7 +102,7 @@
     repo: "https://github.com/{{ item.repo }}.git"
     dest: "{{ ansible_facts['user_dir'] }}/.config/zsh/plugins/{{ item.name }}"
     depth: 1
-    update: false
+    update: true
   loop:
     - { repo: "zdharma-continuum/fast-syntax-highlighting", name: "fast-syntax-highlighting" }
     - { repo: "Aloxaf/fzf-tab", name: "fzf-tab" }
