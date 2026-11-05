@@ -13,21 +13,28 @@
   changed_when: false
   failed_when: false
 
+- name: "{{ role_name | capitalize }} | Self update"
+  ansible.builtin.command:
+    cmd: "{{ bin_dir }}/uv self update"
+  register: uv_self_update
+  changed_when: "'Upgraded' in uv_self_update.stderr"
+  failed_when: false
+  when: uv_installed.rc == 0
+
 - name: "{{ role_name | capitalize }} | Download installer"
   ansible.builtin.get_url:
     url: https://astral.sh/uv/install.sh
     dest: /tmp/uv-install.sh
     mode: "0755"
-  when: uv_installed.rc != 0
+  when: uv_installed.rc != 0 or uv_self_update.rc != 0
 
 - name: "{{ role_name | capitalize }} | Install"
   ansible.builtin.command:
     cmd: sh /tmp/uv-install.sh
-    creates: "{{ bin_dir }}/uv"
   environment:
     UV_INSTALL_DIR: "{{ bin_dir }}"
     UV_NO_MODIFY_PATH: "1"
-  when: uv_installed.rc != 0
+  when: uv_installed.rc != 0 or uv_self_update.rc != 0
 
 - name: "{{ role_name | capitalize }} | Check for distribution cleanup tasks"
   ansible.builtin.stat:
