@@ -7,14 +7,35 @@
     path: "{{ sqlcl_dir }}/bin/sql"
   register: sqlcl_installed
 
+- name: "Sqlcl | {{ ansible_facts['distribution'] }} | Read installed release"
+  ansible.builtin.command:
+    cmd: "cat {{ sqlcl_dir }}/.etag"
+  register: sqlcl_installed_etag
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: "Sqlcl | {{ ansible_facts['distribution'] }} | Query latest release"
+  ansible.builtin.uri:
+    url: https://download.oracle.com/otn_software/java/sqldeveloper/sqlcl-latest.zip
+    method: HEAD
+  register: sqlcl_remote
+  changed_when: false
+  check_mode: false
+
 - name: "Sqlcl | {{ ansible_facts['distribution'] }} | Install"
-  when: not sqlcl_installed.stat.exists
+  when: not sqlcl_installed.stat.exists or sqlcl_installed_etag.stdout != sqlcl_remote.etag
   block:
     - name: "Sqlcl | {{ ansible_facts['distribution'] }} | Ensure data directory exists"
       ansible.builtin.file:
         path: "{{ sqlcl_dir | dirname }}"
         state: directory
         mode: "0755"
+
+    - name: "Sqlcl | {{ ansible_facts['distribution'] }} | Remove previous release"
+      ansible.builtin.file:
+        path: "{{ sqlcl_dir }}"
+        state: absent
 
     - name: "Sqlcl | {{ ansible_facts['distribution'] }} | Download latest release"
       ansible.builtin.get_url:
@@ -28,6 +49,12 @@
         src: /tmp/sqlcl-latest.zip
         dest: "{{ sqlcl_dir | dirname }}"
         remote_src: true
+
+    - name: "Sqlcl | {{ ansible_facts['distribution'] }} | Record installed release"
+      ansible.builtin.copy:
+        content: "{{ sqlcl_remote.etag }}"
+        dest: "{{ sqlcl_dir }}/.etag"
+        mode: "0644"
 
     - name: "Sqlcl | {{ ansible_facts['distribution'] }} | Remove download"
       ansible.builtin.file:
