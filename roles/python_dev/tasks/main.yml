@@ -8,12 +8,13 @@
   ansible.builtin.include_tasks: "{{ ansible_facts['distribution'] }}.yml"
   when: python_dev_distribution_config.stat.exists
 
-- name: "Python dev | Install pre-commit with uv"
+- name: "Python dev | Install or upgrade pre-commit with uv"
   ansible.builtin.command:
-    cmd: "{{ bin_dir }}/uv tool install pre-commit"
-    creates: "{{ bin_dir }}/pre-commit"
+    cmd: "{{ bin_dir }}/uv tool install --upgrade pre-commit"
   environment:
     UV_TOOL_BIN_DIR: "{{ bin_dir }}"
+  register: python_dev_precommit
+  changed_when: python_dev_precommit.stderr is search('Installed \d+ packages?')
 
 - name: "Python dev | Remove legacy global Watchdog install"
   ansible.builtin.command:
