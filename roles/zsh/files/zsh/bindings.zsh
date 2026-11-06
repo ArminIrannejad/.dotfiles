@@ -1,7 +1,5 @@
-# Run directly, typing it via bindkey -s gets highlighted char by char
-# tmux attach rejects /dev/tty so use the real device
-_sessionizer() { tmux-sessionizer <$TTY; zle reset-prompt }
-_sessionizer_w() { tmux-sessionizer -w <$TTY; zle reset-prompt }
+_sessionizer() { tmux-sessionizer <>$TTY; zle reset-prompt }
+_sessionizer_w() { tmux-sessionizer -w <>$TTY; zle reset-prompt }
 zle -N _sessionizer
 zle -N _sessionizer_w
 
