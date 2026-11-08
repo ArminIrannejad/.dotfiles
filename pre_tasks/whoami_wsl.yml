@@ -6,16 +6,15 @@
     cmd: $env:UserName
   register: windows_user
   changed_when: false
+  check_mode: false
   args:
     executable: powershell.exe
   when: ps_interop.rc | default(1) == 0
 
 - name: Register Windows Current User
   ansible.builtin.set_fact:
-    wsl_host_user: "{{ windows_user.stdout }}"
-  when:
-    - host_user is not defined
-    - windows_user.stdout is defined
+    wsl_host_user: "{{ windows_user.stdout | trim }}"
+  when: windows_user.stdout is defined
 
 - name: Show WSL host user
   ansible.builtin.debug:

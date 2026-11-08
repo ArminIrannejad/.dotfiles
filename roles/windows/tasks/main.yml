@@ -10,15 +10,17 @@
         cmd: >-
           powershell.exe -NoProfile -Command
           '[Environment]::GetFolderPath("UserProfile"); [Environment]::GetFolderPath("MyDocuments")'
-          | tr -d '\r' | while IFS= read -r p; do wslpath "$p"; done
+          | tr -d '\r' | while IFS= read -r p; do printf '%s\n' "$p"; wslpath "$p"; done
       register: windows_folders
       changed_when: false
       check_mode: false
 
     - name: "{{ role_name | capitalize }} | Set Windows folders"
       ansible.builtin.set_fact:
-        windows_home: "{{ windows_folders.stdout_lines[0] }}"
-        windows_documents: "{{ windows_folders.stdout_lines[1] }}"
+        windows_home_native: "{{ windows_folders.stdout_lines[0] }}"
+        windows_home: "{{ windows_folders.stdout_lines[1] }}"
+        windows_documents_native: "{{ windows_folders.stdout_lines[2] }}"
+        windows_documents: "{{ windows_folders.stdout_lines[3] }}"
 
     - name: "{{ role_name | capitalize }} | Ensure config directories exist"
       ansible.builtin.file:
@@ -33,10 +35,34 @@
         src: .wslconfig
         dest: "{{ windows_home }}/.wslconfig"
 
-    - name: "{{ role_name | capitalize }} | Copy GlazeWM config"
-      ansible.builtin.copy:
-        src: glazewm/config.yaml
-        dest: "{{ windows_home }}/.glzr/glazewm/config.yaml"
+    - name: "{{ role_name | capitalize }} | Render GlazeWM config"
+      ansible.builtin.template:
+        src: glazewm/config.yaml.j2
+        dest: "/tmp/dotfiles-glazewm-{{ ansible_facts['user_uid'] }}.yaml"
+        newline_sequence: "\r\n"
+      changed_when: false
+      check_mode: false
+
+    # ansible.builtin.copy tries to enforce Unix metadata on DrvFS and reports
+    # a change on every run. Compare bytes directly so this stays idempotent.
+    - name: "{{ role_name | capitalize }} | Copy rendered GlazeWM config"
+      ansible.builtin.shell:
+        cmd: >-
+          if cmp -s "/tmp/dotfiles-glazewm-{{ ansible_facts['user_uid'] }}.yaml"
+          "{{ windows_home }}/.glzr/glazewm/config.yaml"; then exit 0; fi;
+          {{ 'exit 3' if ansible_check_mode else
+             'cp "/tmp/dotfiles-glazewm-' ~ ansible_facts['user_uid'] ~ '.yaml" "' ~ windows_home ~ '/.glzr/glazewm/config.yaml"; exit 3' }}
+      register: windows_glazewm_copy
+      changed_when: windows_glazewm_copy.rc == 3
+      failed_when: windows_glazewm_copy.rc not in [0, 3]
+      check_mode: false
+
+    - name: "{{ role_name | capitalize }} | Remove rendered GlazeWM config"
+      ansible.builtin.file:
+        path: "/tmp/dotfiles-glazewm-{{ ansible_facts['user_uid'] }}.yaml"
+        state: absent
+      changed_when: false
+      check_mode: false
 
     - name: "{{ role_name | capitalize }} | Copy AutoHotkey scripts"
       ansible.builtin.copy:
