@@ -4,6 +4,8 @@
 *~
 *.tgz
 .DS_Store
+PLAN.scratch.md
+TASKS.scratch.md
 
 nvim-pack-lock.json
 

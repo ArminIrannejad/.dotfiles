@@ -1,0 +1,130 @@
+---
+- name: "Pi | Ensure user directories exist"
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - "{{ bin_dir }}"
+    - "{{ ansible_facts['user_dir'] }}/.pi/agent"
+
+- name: "Pi | Check Node.js compatibility"
+  ansible.builtin.command:
+    cmd: >-
+      node -e "const [major, minor, patch] = process.versions.node.split('.').map(Number);
+      process.exit(major > 22 || (major === 22 && (minor > 19 || (minor === 19 && patch >= 0))) ? 0 : 1)"
+  register: pi_node_check
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: "Pi | Resolve executable"
+  ansible.builtin.shell:
+    cmd: command -v pi
+  environment:
+    PATH: "{{ bin_dir }}:{{ ansible_facts['env']['PATH'] }}"
+  register: pi_path
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  when: pi_node_check.rc == 0
+
+- name: "Pi | Install"
+  ansible.builtin.shell:
+    cmd: curl -fsSL https://pi.dev/install.sh | sh
+  environment:
+    PATH: "{{ bin_dir }}:{{ ansible_facts['env']['PATH'] }}"
+    PI_TELEMETRY: "0"
+  when:
+    - pi_node_check.rc == 0
+    - pi_path.rc | default(1) != 0
+
+- name: "Pi | Update"
+  ansible.builtin.command:
+    cmd: "{{ pi_path.stdout }} update"
+  environment:
+    PATH: "{{ bin_dir }}:{{ ansible_facts['env']['PATH'] }}"
+  when:
+    - pi_node_check.rc == 0
+    - pi_path.rc | default(1) == 0
+
+- name: "Pi | Link instruction files"
+  ansible.builtin.file:
+    src: "{{ role_path }}/files/{{ item }}"
+    dest: "{{ ansible_facts['user_dir'] }}/.pi/agent/{{ item }}"
+    state: link
+    force: true
+  loop:
+    - AGENTS.md
+    - APPEND_SYSTEM.md
+
+- name: "Pi | Check settings"
+  ansible.builtin.stat:
+    path: "{{ ansible_facts['user_dir'] }}/.pi/agent/settings.json"
+  register: pi_settings_stat
+
+- name: "Pi | Read settings"
+  ansible.builtin.slurp:
+    path: "{{ ansible_facts['user_dir'] }}/.pi/agent/settings.json"
+  register: pi_settings_file
+  when: pi_settings_stat.stat.exists
+
+- name: "Pi | Merge managed settings"
+  ansible.builtin.set_fact:
+    pi_merged_settings: >-
+      {{
+        ((pi_settings_file.content | b64decode | from_json)
+          if pi_settings_stat.stat.exists else {})
+        | combine(pi_settings | combine({'packages': pi_packages}), recursive=true)
+      }}
+
+- name: "Pi | Write settings"
+  ansible.builtin.copy:
+    content: "{{ pi_merged_settings | to_nice_json }}\n"
+    dest: "{{ ansible_facts['user_dir'] }}/.pi/agent/settings.json"
+    mode: "0600"
+
+- name: "Pi | Install and update packages"
+  ansible.builtin.command:
+    cmd: >-
+      {{ pi_path.stdout
+         if (pi_path.rc | default(1)) == 0
+         else bin_dir ~ '/pi' }} update --extensions
+  environment:
+    PATH: "{{ bin_dir }}:{{ ansible_facts['env']['PATH'] }}"
+  when: pi_node_check.rc == 0
+
+- name: "Pi | Check Claude Code"
+  ansible.builtin.command:
+    cmd: claude --version
+  environment:
+    PATH: "{{ bin_dir }}:{{ ansible_facts['env']['PATH'] }}"
+  register: pi_claude_check
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  when:
+    - pi_node_check.rc == 0
+    - pi_install_claude_code | default(true) | bool
+
+- name: "Pi | Install Claude Code for pi-claude-bridge"
+  ansible.builtin.shell:
+    cmd: curl -fsSL https://claude.ai/install.sh | bash
+  environment:
+    PATH: "{{ bin_dir }}:{{ ansible_facts['env']['PATH'] }}"
+  when:
+    - pi_node_check.rc == 0
+    - pi_install_claude_code | default(true) | bool
+    - pi_claude_check.rc != 0
+
+- name: "Pi | Node.js requirement not met"
+  ansible.builtin.debug:
+    msg: "Pi installation skipped: Node.js 22.19 or newer is required. Run the nodejs role first."
+  when: pi_node_check.rc != 0
+
+- name: "Pi | Claude authentication reminder"
+  ansible.builtin.debug:
+    msg: "Run `claude auth login`, then select a `claude-bridge/...` model in Pi."
+  when:
+    - pi_node_check.rc == 0
+    - pi_install_claude_code | default(true) | bool

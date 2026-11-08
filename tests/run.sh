@@ -14,7 +14,9 @@ here="$(cd "$(dirname "$0")" && pwd)"
 repo="$(cd "$here/.." && pwd)"
 all=(arch omarchy fedora ubuntu)
 distros=()
-extra=(--skip-tags haskell)
+# Claude Code's native binary is hundreds of MB and auto-updates independently.
+# Exercise the Pi role in containers, but skip that optional download.
+extra=(--skip-tags haskell -e pi_install_claude_code=false)
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -50,6 +52,9 @@ for distro in "${distros[@]}"; do
       echo "### login shell before: $(getent passwd armin | cut -d: -f7)"
       ansible-playbook main.yml $ANSIBLE_ARGS
       echo "### ansible-playbook exit: $?"
+      echo "### running optional pi role"
+      ansible-playbook main.yml -t pi -e pi_install_claude_code=false
+      echo "### pi role exit: $?"
       bash /verify.sh
     ' || rc=1
 done

@@ -13,14 +13,31 @@ check_cmd() {
   fi
 }
 
+export PATH="$HOME/.cargo/bin:$HOME/.local/bin:$HOME/go/bin:/usr/local/go/bin:$PATH"
+
 echo "== binaries =="
 for b in bat btop cmake curl eza fastfetch fd fzf gh git go hyperfine java jq \
-         lua nvim node npm python3 rg starship tmux tree unzip wget zoxide zsh uv terraform podman; do
+         lua nvim node npm pi python3 rg starship tmux tree unzip wget zoxide zsh uv terraform podman; do
   check_cmd "$b" "$b"
 done
 check_cmd "rustup" rustup
 check_cmd "cargo"  cargo
 check_cmd "rustc"  rustc
+
+echo "== pi setup =="
+if node -e 'const [M,m,p]=process.versions.node.split(".").map(Number); process.exit(M>22||(M===22&&(m>19||(m===19&&p>=0)))?0:1)'; then
+  ok "node satisfies Pi requirement: $(node --version)"
+else
+  bad "node is too old for Pi: $(node --version)"
+fi
+for f in AGENTS.md APPEND_SYSTEM.md; do
+  if [ -L "$HOME/.pi/agent/$f" ]; then ok "$f linked"; else bad "$f is not linked"; fi
+done
+if pi list 2>/dev/null | grep -q 'npm:pi-claude-bridge'; then
+  ok "pi-claude-bridge installed"
+else
+  bad "pi-claude-bridge missing"
+fi
 
 echo "== rust toolchain =="
 export PATH="$HOME/.cargo/bin:$PATH"
