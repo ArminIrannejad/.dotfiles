@@ -28,6 +28,11 @@
         - "{{ windows_home }}/.glzr/glazewm"
         - "{{ windows_documents }}/AutoHotkey"
 
+    - name: "{{ role_name | capitalize }} | Copy WSL config"
+      ansible.builtin.copy:
+        src: .wslconfig
+        dest: "{{ windows_home }}/.wslconfig"
+
     - name: "{{ role_name | capitalize }} | Copy GlazeWM config"
       ansible.builtin.copy:
         src: glazewm/config.yaml

@@ -1,0 +1,5 @@
+[wsl2]
+networkingMode=mirrored
+autoProxy=true
+dnsTunneling=true
+
