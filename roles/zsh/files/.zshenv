@@ -19,8 +19,10 @@ export PATH="$HOME/.local/bin:$PATH"
 
 # Prefer an explicitly configured JDK, otherwise use the standard path from
 # the Fedora Java role or Debian/Ubuntu's default Java symlink.
+# Temurin 21 comes first: Spark 4.0 / Hadoop break on JDK 24+ (JEP 486 removed
+# the Security Manager, so Subject.getSubject throws UnsupportedOperationException).
 if [[ -z "$JAVA_HOME" ]]; then
-  for java_home in /usr/lib/jvm/java-25-openjdk /usr/lib/jvm/default-java; do
+  for java_home in /usr/lib/jvm/java-21-temurin-jdk /usr/lib/jvm/java-25-openjdk /usr/lib/jvm/default-java; do
     if [[ -d "$java_home" ]]; then
       export JAVA_HOME="$java_home"
       break

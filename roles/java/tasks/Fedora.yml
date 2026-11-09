@@ -5,3 +5,23 @@
     state: latest
   become: true
   when: can_install_packages | default(false)
+
+# Spark 4.0 / Hadoop don't support JDK 24+: JEP 486 permanently removed the
+# Security Manager, so Hadoop's UserGroupInformation.getCurrentUser() hits
+# Subject.getSubject(), which now throws UnsupportedOperationException. Install
+# Temurin 21 (LTS, supported by Spark) alongside the system JDK; the zsh role
+# points JAVA_HOME at it.
+- name: "Java | {{ ansible_facts['distribution'] }} | Enable Adoptium (Temurin) repository"
+  ansible.builtin.dnf:
+    name: adoptium-temurin-java-repository
+    state: present
+  become: true
+  when: can_install_packages | default(false)
+
+- name: "Java | {{ ansible_facts['distribution'] }} | Install Temurin 21 (Spark-compatible)"
+  ansible.builtin.dnf:
+    name: temurin-21-jdk
+    state: present
+    enablerepo: adoptium-temurin-java-repository
+  become: true
+  when: can_install_packages | default(false)
