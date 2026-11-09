@@ -1,16 +1,8 @@
 ---
-- name: "Java | {{ ansible_facts['distribution'] }} | Install packages"
-  ansible.builtin.dnf:
-    name: java-25-openjdk-devel
-    state: latest
-  become: true
-  when: can_install_packages | default(false)
-
 # Spark 4.0 / Hadoop don't support JDK 24+: JEP 486 permanently removed the
 # Security Manager, so Hadoop's UserGroupInformation.getCurrentUser() hits
-# Subject.getSubject(), which now throws UnsupportedOperationException. Install
-# Temurin 21 (LTS, supported by Spark) alongside the system JDK; the zsh role
-# points JAVA_HOME at it.
+# Subject.getSubject(), which now throws UnsupportedOperationException. Use
+# Temurin 21 (LTS, supported by Spark) as Fedora's only installed JDK.
 - name: "Java | {{ ansible_facts['distribution'] }} | Enable Adoptium (Temurin) repository"
   ansible.builtin.dnf:
     name: adoptium-temurin-java-repository
@@ -21,7 +13,41 @@
 - name: "Java | {{ ansible_facts['distribution'] }} | Install Temurin 21 (Spark-compatible)"
   ansible.builtin.dnf:
     name: temurin-21-jdk
-    state: present
+    state: latest
     enablerepo: adoptium-temurin-java-repository
+  become: true
+  when: can_install_packages | default(false)
+
+- name: "Java | {{ ansible_facts['distribution'] }} | Remove unsupported OpenJDK 25"
+  ansible.builtin.dnf:
+    name:
+      - java-25-openjdk
+      - java-25-openjdk-crypto-adapter
+      - java-25-openjdk-devel
+      - java-25-openjdk-headless
+    state: absent
+  become: true
+  when: can_install_packages | default(false)
+
+- name: "Java | {{ ansible_facts['distribution'] }} | Remove stale OpenJDK 25 files"
+  ansible.builtin.file:
+    path: /usr/lib/jvm/java-25-openjdk
+    state: absent
+  become: true
+  when: can_install_packages | default(false)
+
+- name: "Java | {{ ansible_facts['distribution'] }} | Select Temurin 21 alternatives"
+  ansible.builtin.command:
+    argv:
+      - alternatives
+      - --set
+      - "{{ item.name }}"
+      - "{{ item.path }}"
+  loop:
+    - name: java
+      path: /usr/lib/jvm/java-21-temurin-jdk/bin/java
+    - name: javac
+      path: /usr/lib/jvm/java-21-temurin-jdk/bin/javac
+  changed_when: false
   become: true
   when: can_install_packages | default(false)

@@ -62,6 +62,24 @@ elif command -v rpm    >/dev/null 2>&1; then rpm -q rust     >/dev/null 2>&1 && 
 elif command -v dpkg   >/dev/null 2>&1; then dpkg -s rustc   >/dev/null 2>&1 && bad "distro rustc still installed" || ok "no distro rustc"
 fi
 
+echo "== Java toolchain =="
+java_version=$(java -version 2>&1 | awk -F'"' 'NR == 1 { print $2 }')
+if [ -r /etc/os-release ]; then
+  . /etc/os-release
+fi
+if [ "${ID:-}" = fedora ]; then
+  case "$java_version" in
+    21.*) ok "Fedora Java is $java_version" ;;
+    *)    bad "Fedora Java is $java_version, expected 21.x" ;;
+  esac
+  rpm -qa 'java-25-openjdk*' | grep -q . && bad "OpenJDK 25 packages remain" || ok "no OpenJDK 25 packages"
+  [ ! -e /usr/lib/jvm/java-25-openjdk ] && ok "no stale OpenJDK 25 directory" || bad "stale OpenJDK 25 directory remains"
+  java_home=$(env JAVA_HOME=/usr/lib/jvm/java-25-openjdk zsh -f -c 'source "$HOME/.zshenv"; print -r -- "$JAVA_HOME"')
+  [ "$java_home" = /usr/lib/jvm/java-21-temurin-jdk ] && ok "zsh replaces inherited stale JAVA_HOME" || bad "zsh selected JAVA_HOME=$java_home"
+else
+  ok "Java is $java_version"
+fi
+
 echo "== login shell =="
 shell=$(getent passwd "$(id -un)" | cut -d: -f7)
 case "$shell" in
