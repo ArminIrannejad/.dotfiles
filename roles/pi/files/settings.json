@@ -1,0 +1,34 @@
+{
+  "$schema": "https://pi.dev/schemas/settings.schema.json",
+  "theme": "dark/dark",
+  "defaultThinkingLevel": "high",
+  "quietStartup": true,
+  "collapseChangelog": true,
+  "retry": {
+    "enabled": true,
+    "maxRetries": 10
+  },
+  "editorPaddingX": 1,
+  "enabledModels": [
+    "claude-fable-*",
+    "claude-opus-*",
+    "claude-sonnet-*",
+    "gpt-5*"
+  ],
+  "extensions": [
+    "-builtin:mcp"
+  ],
+  "defaultProjectTrust": "always",
+  "defaultProvider": "openai-codex",
+  "defaultModel": "gpt-5.6-sol",
+  "packages": [
+    "npm:pi-web-access",
+    "npm:pi-mcp-adapter",
+    "npm:pi-subagents",
+    "npm:pi-simplify",
+    "npm:pi-x-ide",
+    "npm:pi-mermaid",
+    "npm:pi-claude-bridge",
+    "git:github.com/tmustier/pi-nes"
+  ]
+}

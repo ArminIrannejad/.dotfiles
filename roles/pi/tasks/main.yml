@@ -75,7 +75,8 @@
       {{
         ((pi_settings_file.content | b64decode | from_json)
           if pi_settings_stat.stat.exists else {})
-        | combine(pi_settings | combine({'packages': pi_packages}), recursive=true)
+        | combine(lookup('ansible.builtin.file', role_path ~ '/files/settings.json') | from_json,
+                  recursive=true)
       }}
 
 - name: "Pi | Write settings"

@@ -66,35 +66,6 @@ rust_components:
   - rustfmt
 
 pi_install_claude_code: true
-pi_packages:
-  - npm:pi-web-access
-  - npm:pi-mcp-adapter
-  - npm:pi-subagents
-  - npm:pi-simplify
-  - npm:pi-x-ide
-  - npm:pi-mermaid
-  - npm:pi-claude-bridge
-  - git:github.com/tmustier/pi-nes
-pi_settings:
-  "$schema": https://pi.dev/schemas/settings.schema.json
-  theme: dark/dark
-  defaultThinkingLevel: xhigh
-  quietStartup: true
-  collapseChangelog: true
-  retry:
-    enabled: true
-    maxRetries: 10
-  editorPaddingX: 1
-  enabledModels:
-    - claude-fable-*
-    - claude-opus-*
-    - claude-sonnet-*
-    - gpt-5*
-  extensions:
-    - "-builtin:mcp"
-  defaultProjectTrust: always
-  defaultProvider: anthropic
-  defaultModel: claude-opus-4-8
 
 config_dir: "{{ ansible_facts['env']['HOME'] }}/.config"
 bin_dir: "{{ ansible_facts['env']['HOME'] }}/.local/bin"
