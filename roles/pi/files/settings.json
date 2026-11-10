@@ -19,7 +19,7 @@
     "-builtin:mcp"
   ],
   "defaultProjectTrust": "always",
-  "defaultProvider": "openai-codex",
+  "defaultProvider": "openai",
   "defaultModel": "gpt-5.6-sol",
   "packages": [
     "npm:pi-web-access",
