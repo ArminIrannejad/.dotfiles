@@ -1,0 +1,21 @@
+---
+- name: "Atuin | Check distro support"
+  ansible.builtin.assert:
+    that: ansible_facts['distribution'] in ['Archlinux', 'Fedora', 'MacOSX', 'Ubuntu']
+    fail_msg: "Atuin installation is not configured for {{ ansible_facts['distribution'] }}."
+    quiet: true
+
+- name: "Atuin | Install for {{ ansible_facts['distribution'] }}"
+  ansible.builtin.include_tasks: "{{ ansible_facts['distribution'] }}.yml"
+
+- name: "Atuin | Create config directory"
+  ansible.builtin.file:
+    path: "{{ config_dir }}/atuin"
+    state: directory
+    mode: "0700"
+
+- name: "Atuin | Deploy opt-in zsh helper"
+  ansible.builtin.copy:
+    src: enable.zsh
+    dest: "{{ config_dir }}/atuin/enable.zsh"
+    mode: "0644"

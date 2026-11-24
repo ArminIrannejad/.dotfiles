@@ -1,0 +1,71 @@
+---
+# Ubuntu 24.04 has no Atuin package. Install the upstream binary without
+# running the installer, which can set up shell hooks and import history.
+- name: "Atuin | Install upstream release"
+  vars:
+    atuin_version: "18.12.1"
+    atuin_checksums:
+      x86_64: "0b25c91ff0619d2cd912f6b74abeb5f3386a28f06aee0a9d524077660ceeaee7"
+      aarch64: "7c03a5bf2daaea389426943213bc82dce680e0bfd54afea4cbb0686a2c9f8d13"
+    atuin_arch: "{{ ansible_facts['machine'] }}"
+    atuin_asset: "atuin-{{ atuin_arch }}-unknown-linux-musl"
+  block:
+    - name: "Atuin | Check installed version"
+      ansible.builtin.command:
+        argv:
+          - "{{ bin_dir }}/atuin"
+          - --version
+      register: atuin_installed
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: "Atuin | Install version {{ atuin_version }}"
+      when: atuin_installed.rc != 0 or atuin_installed.stdout.split()[1:2] != [atuin_version]
+      block:
+        - name: "Atuin | Check architecture support"
+          ansible.builtin.assert:
+            that: atuin_arch in atuin_checksums
+            fail_msg: "Atuin has no configured Ubuntu build for {{ atuin_arch }}."
+            quiet: true
+
+        - name: "Atuin | Create user bin directory"
+          ansible.builtin.file:
+            path: "{{ bin_dir }}"
+            state: directory
+            mode: "0755"
+
+        - name: "Atuin | Download and install binary"
+          when: not ansible_check_mode
+          block:
+            - name: "Atuin | Create temporary directory"
+              ansible.builtin.tempfile:
+                state: directory
+                prefix: atuin-
+              register: atuin_tmp
+
+            - name: "Atuin | Download release archive"
+              ansible.builtin.get_url:
+                url: "https://github.com/atuinsh/atuin/releases/download/v{{ atuin_version }}/{{ atuin_asset }}.tar.gz"
+                checksum: "sha256:{{ atuin_checksums[atuin_arch] }}"
+                dest: "{{ atuin_tmp.path }}/atuin.tar.gz"
+                mode: "0600"
+
+            - name: "Atuin | Extract archive"
+              ansible.builtin.unarchive:
+                src: "{{ atuin_tmp.path }}/atuin.tar.gz"
+                dest: "{{ atuin_tmp.path }}"
+                remote_src: true
+
+            - name: "Atuin | Install binary"
+              ansible.builtin.copy:
+                src: "{{ atuin_tmp.path }}/{{ atuin_asset }}/atuin"
+                dest: "{{ bin_dir }}/atuin"
+                mode: "0755"
+                remote_src: true
+          always:
+            - name: "Atuin | Remove temporary directory"
+              ansible.builtin.file:
+                path: "{{ atuin_tmp.path }}"
+                state: absent
+              when: atuin_tmp.path is defined

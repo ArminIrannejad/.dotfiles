@@ -1,0 +1,7 @@
+---
+- name: "Atuin | Install package with DNF"
+  ansible.builtin.dnf:
+    name: atuin
+    state: present
+  become: true
+  when: can_install_packages | default(false)

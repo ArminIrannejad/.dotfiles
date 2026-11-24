@@ -1,0 +1,7 @@
+---
+- name: "Atuin | Install package with pacman"
+  community.general.pacman:
+    name: atuin
+    state: present
+  become: true
+  when: can_install_packages | default(false)

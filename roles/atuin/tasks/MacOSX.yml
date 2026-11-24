@@ -1,0 +1,5 @@
+---
+- name: "Atuin | Install formula with Homebrew"
+  community.general.homebrew:
+    name: atuin
+    state: present
