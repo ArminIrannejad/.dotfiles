@@ -38,3 +38,6 @@
     state: link
     force: true
 
+- name: "Neovim | Provision Org workspace"
+  ansible.builtin.import_tasks: org.yml
+

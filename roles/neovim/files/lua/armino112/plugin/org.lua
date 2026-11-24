@@ -4,9 +4,27 @@ vim.pack.add({
   { src = "https://github.com/nvim-orgmode/org-bullets.nvim" },
 })
 
+local org_dir = vim.env.ORG_DIR
+org_dir = vim.fs.normalize(org_dir and org_dir ~= "" and org_dir or "~/org")
+local notes_file = vim.fs.joinpath(org_dir, "refile.org")
+
+local ok, err = pcall(function()
+  vim.fn.mkdir(org_dir, "p")
+  -- Exclusive creation: never truncate existing notes.
+  local fd, open_err, code = vim.uv.fs_open(notes_file, "wx", tonumber("600", 8))
+  if fd then
+    vim.uv.fs_close(fd)
+  elseif code ~= "EEXIST" then
+    error(open_err, 0)
+  end
+end)
+if not ok then
+  vim.notify("Could not initialize Org notes: " .. err, vim.log.levels.WARN)
+end
+
 require("orgmode").setup({
-  org_agenda_files          = { "~/work/org/**/*" },
-  org_default_notes_file    = "~/work/org/refile.org",
+  org_agenda_files          = { vim.fs.joinpath(org_dir, "**/*") },
+  org_default_notes_file    = notes_file,
   org_hide_emphasis_markers = true,
 })
 

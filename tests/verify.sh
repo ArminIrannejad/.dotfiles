@@ -94,6 +94,13 @@ for f in .zshrc .zshenv; do
 done
 [ -d "$HOME/.config/zsh/plugins/fzf-tab" ] && ok "zsh plugins cloned" || bad "zsh plugins missing"
 
+echo "== Neovim Org workspace =="
+org_dir=${ORG_DIR:-$HOME/org}
+case "$org_dir" in
+  '~/'*) org_dir="$HOME/${org_dir:2}" ;;
+esac
+[ -f "$org_dir/refile.org" ] && ok "Org inbox -> $org_dir/refile.org" || bad "Org inbox missing at $org_dir/refile.org"
+
 echo "== upstream tarballs beat distro packages =="
 # /usr/sbin and /usr/bin are the same directory on merged-usr distros, so
 # resolve the link before judging where go came from.

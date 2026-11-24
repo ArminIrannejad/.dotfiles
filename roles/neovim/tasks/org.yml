@@ -1,0 +1,17 @@
+---
+
+- name: "Neovim | Initialize Org workspace"
+  vars:
+    neovim_org_dir: "{{ ansible_facts['env'].ORG_DIR | default(ansible_facts['env'].HOME ~ '/org', true) | expanduser }}"
+  block:
+    - name: "Neovim | Ensure Org directory exists"
+      ansible.builtin.file:
+        path: "{{ neovim_org_dir }}"
+        state: directory
+
+    - name: "Neovim | Create Org capture file if missing"
+      ansible.builtin.copy:
+        dest: "{{ neovim_org_dir }}/refile.org"
+        content: ""
+        mode: "0600"
+        force: false
