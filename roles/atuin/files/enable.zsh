@@ -15,6 +15,17 @@
     eval "$atuin_init" || return 1
   fi
 
-  bindkey -M viins '^X^A' atuin-search-viins
-  bindkey -M vicmd '^X^A' atuin-search-vicmd
+  _dotfiles_atuin_bindkeys() {
+    bindkey -M emacs '^R' atuin-search
+    bindkey -M viins '^R' atuin-search-viins
+    bindkey -M vicmd '^R' atuin-search-vicmd
+    bindkey -M viins '^X^A' atuin-search-viins
+    bindkey -M vicmd '^X^A' atuin-search-vicmd
+  }
+
+  # Apply again after zsh-vi-mode sets its own history bindings.
+  if (( ${+functions[zvm_init]} && ! ${zvm_after_init_commands[(I)_dotfiles_atuin_bindkeys]} )); then
+    zvm_after_init_commands+=(_dotfiles_atuin_bindkeys)
+  fi
+  _dotfiles_atuin_bindkeys
 }
