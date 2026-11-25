@@ -28,3 +28,6 @@
     src: enable.zsh
     dest: "{{ config_dir }}/atuin/enable.zsh"
     mode: "0644"
+
+- name: "Atuin | Enable in zsh unless already configured"
+  ansible.builtin.import_tasks: zsh.yml

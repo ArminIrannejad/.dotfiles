@@ -49,3 +49,8 @@ done
 
 [ -f "$HOME/.ghcup/env" ] && . "$HOME/.ghcup/env"
 export PATH="$HOME/.cargo/bin:$PATH"
+
+# Optional roles can add shell setup here without editing this checkout.
+if [[ -r "$ZDOTDIR/local.zsh" ]]; then
+  source "$ZDOTDIR/local.zsh"
+fi

@@ -1,0 +1,68 @@
+---
+- name: "Atuin | Resolve zsh startup directory"
+  ansible.builtin.command:
+    argv:
+      - zsh
+      - -c
+      - 'print -r -- "${ZDOTDIR:-$HOME}"'
+  register: atuin_zsh_probe
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: "Atuin | Configure zsh startup"
+  vars:
+    atuin_zdotdir: >-
+      {{ (atuin_zsh_probe.stdout_lines | last)
+         if atuin_zsh_probe.rc == 0 and atuin_zsh_probe.stdout_lines else
+         (ansible_facts['env'].ZDOTDIR | default(ansible_facts['user_dir'], true)) }}
+    atuin_zshrc: "{{ atuin_zdotdir }}/.zshrc"
+    atuin_managed_zshrc: "{{ (playbook_dir ~ '/roles/zsh/files/.zshrc') | realpath }}"
+    atuin_zsh_files: "{{ ['.zshenv', '.zprofile', '.zshrc', '.zlogin'] + atuin_zsh_fragments }}"
+    atuin_zsh_fragments: >-
+      {{ ['fzf.zsh', 'aliases.zsh', 'bindings.zsh', 'plugins.zsh', 'prompt.zsh', 'local.zsh']
+         if atuin_zsh_managed else [] }}
+    atuin_zsh_managed: "{{ atuin_zshrc_stat.stat.lnk_source | default('') == atuin_managed_zshrc }}"
+    atuin_zsh_target: "{{ atuin_zdotdir ~ '/local.zsh' if atuin_zsh_managed else atuin_zshrc }}"
+    atuin_zsh_source: "{{ (config_dir ~ '/atuin/enable.zsh') | quote }}"
+  block:
+    - name: "Atuin | Check if zshrc is managed by dotfiles"
+      ansible.builtin.stat:
+        path: "{{ atuin_zshrc }}"
+        follow: false
+      register: atuin_zshrc_stat
+
+    - name: "Atuin | Look for an existing zsh integration"
+      ansible.builtin.command:
+        argv: >-
+          {{ [ansible_facts['python']['executable'], '-c', atuin_zsh_check] +
+             (atuin_zsh_files | map('regex_replace', '^', atuin_zdotdir ~ '/') | list) }}
+      vars:
+        atuin_zsh_check: |
+          import pathlib
+          import re
+          import sys
+
+          init = re.compile(
+              r"(?m)^[ \t]*(?:[^#\n]*[;&|][ \t]*(?:then[ \t]+)?)?"
+              r"(?:source|\.|eval)[ \t]+[^#\n]*(?<![\w-])atuin(?![\w-])"
+          )
+          for path in map(pathlib.Path, sys.argv[1:]):
+              try:
+                  text = path.read_text(errors="replace")
+              except FileNotFoundError:
+                  continue
+              if init.search(text):
+                  sys.exit(0)
+          sys.exit(1)
+      register: atuin_zsh_integration
+      changed_when: false
+      failed_when: atuin_zsh_integration.rc not in [0, 1] or atuin_zsh_integration.stderr != ''
+      check_mode: false
+
+    - name: "Atuin | Add zsh autoload"
+      ansible.builtin.lineinfile:
+        path: "{{ atuin_zsh_target }}"
+        line: "[[ ! -r {{ atuin_zsh_source }} ]] || source {{ atuin_zsh_source }}"
+        create: true
+      when: atuin_zsh_integration.rc == 1
