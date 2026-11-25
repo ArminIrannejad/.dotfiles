@@ -14,6 +14,15 @@
     state: directory
     mode: "0700"
 
+- name: "Atuin | Enable workspace search"
+  ansible.builtin.lineinfile:
+    path: "{{ config_dir }}/atuin/config.toml"
+    regexp: '^\s*#?\s*workspaces\s*='
+    line: "workspaces = true"
+    insertbefore: BOF
+    create: true
+    mode: "0600"
+
 - name: "Atuin | Deploy opt-in zsh helper"
   ansible.builtin.copy:
     src: enable.zsh
