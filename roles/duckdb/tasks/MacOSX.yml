@@ -1,0 +1,5 @@
+---
+- name: "Duckdb | MacOSX | Install formula with Homebrew"
+  community.general.homebrew:
+    name: duckdb
+    state: latest

@@ -16,7 +16,7 @@ check_cmd() {
 export PATH="$HOME/.cargo/bin:$HOME/.local/bin:$HOME/go/bin:/usr/local/go/bin:$PATH"
 
 echo "== binaries =="
-for b in bat btop cmake curl eza fastfetch fd fzf gh git go hyperfine java jq \
+for b in bat btop cmake curl duckdb eza fastfetch fd fzf gh git go hyperfine java jq \
          lua nvim node npm pi python3 rg starship tmux tree unzip wget zoxide zsh uv terraform podman; do
   check_cmd "$b" "$b"
 done

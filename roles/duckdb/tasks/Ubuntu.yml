@@ -1,0 +1,3 @@
+---
+- name: "Duckdb | Ubuntu | Install from upstream release"
+  ansible.builtin.include_tasks: install_release.yml

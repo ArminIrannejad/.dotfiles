@@ -11,6 +11,7 @@ default_roles:
   - clang
   - cmake
   - curl
+  - duckdb
   - eza
   - fastfetch
   - fd
@@ -58,6 +59,11 @@ haskell_ghc_version: "9.10.3"
 haskell_cabal_version: "3.14.2.0"
 haskell_stack_version: "3.7.1"
 haskell_hls_version: "2.13.0.0"
+
+duckdb_version: "2.0.1"
+duckdb_checksums:
+  amd64: "b676268be4d39e4e41a904442c9796c9914e645cc085c7505f048f2c992b5eca"
+  arm64: "84e37891fcc45c887e30220f51a4914995cd8174139e87f8efd311ac83c956a7"
 
 rust_toolchain: stable
 rust_components:

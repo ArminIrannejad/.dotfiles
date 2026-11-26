@@ -1,0 +1,68 @@
+---
+# Distro packages lag behind and Ubuntu has none, so every Linux gets the
+# pinned upstream CLI. It is a single static binary, so it lands in the user's
+# bin dir and needs no sudo. The sql_auto_complete() table function the Neovim
+# completion source calls is compiled into it, no extension to install.
+- name: "Duckdb | {{ ansible_facts['distribution'] }} | Install upstream release"
+  vars:
+    duckdb_arch: "{{ {'x86_64': 'amd64', 'aarch64': 'arm64'}.get(ansible_facts['machine'], '') }}"
+  block:
+    - name: "Duckdb | {{ ansible_facts['distribution'] }} | Check architecture support"
+      ansible.builtin.assert:
+        that: duckdb_arch in duckdb_checksums
+        fail_msg: "DuckDB has no configured Linux build for {{ ansible_facts['machine'] }}."
+        quiet: true
+
+    - name: "Duckdb | {{ ansible_facts['distribution'] }} | Check installed version"
+      ansible.builtin.command:
+        argv:
+          - "{{ bin_dir }}/duckdb"
+          - --version
+      register: duckdb_installed
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: "Duckdb | {{ ansible_facts['distribution'] }} | Install version {{ duckdb_version }}"
+      when: duckdb_installed.rc != 0 or ('v' ~ duckdb_version ~ ' ') not in duckdb_installed.stdout
+      block:
+        - name: "Duckdb | {{ ansible_facts['distribution'] }} | Create user bin directory"
+          ansible.builtin.file:
+            path: "{{ bin_dir }}"
+            state: directory
+            mode: "0755"
+
+        - name: "Duckdb | {{ ansible_facts['distribution'] }} | Download and install binary"
+          when: not ansible_check_mode
+          block:
+            - name: "Duckdb | {{ ansible_facts['distribution'] }} | Create temporary directory"
+              ansible.builtin.tempfile:
+                state: directory
+                prefix: duckdb-
+              register: duckdb_tmp
+
+            - name: "Duckdb | {{ ansible_facts['distribution'] }} | Download release archive"
+              ansible.builtin.get_url:
+                url: "https://github.com/duckdb/duckdb/releases/download/v{{ duckdb_version }}/duckdb-cli-linux-{{ duckdb_arch }}.tar.gz"
+                checksum: "sha256:{{ duckdb_checksums[duckdb_arch] }}"
+                dest: "{{ duckdb_tmp.path }}/duckdb.tar.gz"
+                mode: "0600"
+
+            - name: "Duckdb | {{ ansible_facts['distribution'] }} | Extract archive"
+              ansible.builtin.unarchive:
+                src: "{{ duckdb_tmp.path }}/duckdb.tar.gz"
+                dest: "{{ duckdb_tmp.path }}"
+                remote_src: true
+
+            - name: "Duckdb | {{ ansible_facts['distribution'] }} | Install binary"
+              ansible.builtin.copy:
+                src: "{{ duckdb_tmp.path }}/duckdb"
+                dest: "{{ bin_dir }}/duckdb"
+                mode: "0755"
+                remote_src: true
+          always:
+            - name: "Duckdb | {{ ansible_facts['distribution'] }} | Remove temporary directory"
+              ansible.builtin.file:
+                path: "{{ duckdb_tmp.path }}"
+                state: absent
+              when: duckdb_tmp.path is defined
