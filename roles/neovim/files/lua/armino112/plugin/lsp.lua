@@ -85,14 +85,23 @@ require("blink.cmp").setup({
     default = { "lsp", "path", "buffer", "snippets" },
 
     per_filetype = {
-      sql = { "dbee", "lsp", "path", "buffer", "snippets" },
+      sql = { "duckdb", "dbee", "lsp", "path", "buffer", "snippets" },
     },
 
     providers = {
+      -- only answers in buffers pointed at a duckdb database (:DuckdbDatabase)
+      duckdb = {
+        name = "duckdb",
+        module = "armino112.plugin.duckdb.source",
+        score_offset = 110,
+      },
       dbee = {
         name = "dbee",
         module = "blink.compat.source",
         score_offset = 100,
+        enabled = function()
+          return not require("armino112.plugin.duckdb.config").active()
+        end,
       },
     },
   },
