@@ -39,6 +39,14 @@ else
   bad "pi-claude-bridge missing"
 fi
 
+echo "== duckdb autocomplete =="
+# the CLI's Tab completion is the statically linked autocomplete extension
+if [ "$(duckdb -noheader -list -c "SELECT count(*) > 0 FROM sql_auto_complete('SEL')" 2>/dev/null)" = true ]; then
+  ok "duckdb autocomplete extension works"
+else
+  bad "duckdb autocomplete extension missing"
+fi
+
 echo "== rust toolchain =="
 export PATH="$HOME/.cargo/bin:$PATH"
 if [ -x "$HOME/.cargo/bin/rustup" ]; then
